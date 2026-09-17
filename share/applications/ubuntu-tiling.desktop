@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Ubuntu Tiling
+Comment=Define screen zones and snap windows to them
+Exec=@BIND@ edit
+Icon=preferences-desktop-display
+Terminal=false
+Categories=Utility;DesktopSettings;
+StartupWMClass=ubuntu-tiling
