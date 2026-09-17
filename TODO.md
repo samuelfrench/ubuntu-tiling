@@ -20,7 +20,7 @@ Public GitHub repo + Ubuntu zone tiling app.
 - [x] Geometry/config/X11 snap + tests
 - [x] GTK zone editor + picker + keybindings + CLI
 - [x] Install on this session
-- [ ] Public repo create/push
+- [x] Public repo `https://github.com/samuelfrench/ubuntu-tiling` (`PUBLIC`, `main`)
 - [ ] Start editor overlay
 - [ ] Shared memory closeout
 
@@ -40,6 +40,8 @@ Public GitHub repo + Ubuntu zone tiling app.
 
 ## Next session FIRST
 
-- If the GitHub repo line below is still empty, run `gh repo create ubuntu-tiling --public --source=. --remote=origin --push` from this directory after a commit.
-- Repo URL:
-- HEAD:
+- Repo is public. Resume from this file, then `ubuntu-tiling doctor`.
+- Repo URL: https://github.com/samuelfrench/ubuntu-tiling
+- HEAD at publish: `26b8c8b48a7b16d15e3cd7c92809cb41d5da57af`
+- Deploy: none (local desktop app). Installed on this machine via `ubuntu-tiling install`.
+- Shared note: `~/.codex/memories/extensions/ad_hoc/notes/20260917T144929Z-ubuntu-tiling-public.md`
