@@ -15,9 +15,16 @@ from ubuntu_tiling.geometry import (
     number_left_to_right,
     split_rect,
 )
-from ubuntu_tiling.overlay import HINT, paint_chrome, paint_zone
+from ubuntu_tiling.overlay import (
+    EDITOR_SHORTCUTS,
+    SNAP_SHORTCUTS,
+    make_canvas,
+    make_root,
+    paint_chrome,
+    paint_zone,
+    zone_shortcut,
+)
 from ubuntu_tiling.wm import WindowManager
-
 
 EDGE = 10
 
@@ -32,18 +39,8 @@ class Drag:
     edges: str = ""
 
 
-def _gtk():
-    import gi
-
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("Gdk", "3.0")
-    from gi.repository import Gdk, Gtk
-
-    return Gdk, Gtk
-
-
 def hit_edges(rect: Rect, x: int, y: int) -> str:
-    if not rect.contains_point(x, y) and not (
+    if not (
         rect.x - EDGE <= x <= rect.right + EDGE and rect.y - EDGE <= y <= rect.bottom + EDGE
     ):
         return ""
@@ -105,41 +102,21 @@ class ZoneEditor:
         self.drag: Drag | None = None
         self.preview: Rect | None = None
         self.saved = False
-        Gdk, Gtk = _gtk()
-        self.Gdk = Gdk
-        self.Gtk = Gtk
-        self.window = Gtk.Window()
-        self.window.set_title("Ubuntu Tiling")
-        self.window.set_wmclass("ubuntu-tiling", "ubuntu-tiling")
-        self.window.set_decorated(False)
-        self.window.set_skip_taskbar_hint(True)
-        self.window.set_skip_pager_hint(True)
-        self.window.set_keep_above(True)
-        self.window.set_app_paintable(True)
-        self.window.set_type_hint(Gdk.WindowTypeHint.NORMAL)
-        self.window.move(monitor.x, monitor.y)
-        self.window.set_default_size(monitor.w, monitor.h)
-        self.window.resize(monitor.w, monitor.h)
-        screen = self.window.get_screen()
-        visual = screen.get_rgba_visual()
-        if visual is not None:
-            self.window.set_visual(visual)
-        self.area = Gtk.DrawingArea()
-        self.area.set_size_request(monitor.w, monitor.h)
-        self.window.add(self.area)
-        self.area.connect("draw", self._on_draw)
-        self.window.connect("button-press-event", self._on_press)
-        self.window.connect("button-release-event", self._on_release)
-        self.window.connect("motion-notify-event", self._on_motion)
-        self.window.connect("key-press-event", self._on_key)
-        self.window.connect("delete-event", lambda *_: Gtk.main_quit())
-        self.window.set_events(
-            Gdk.EventMask.BUTTON_PRESS_MASK
-            | Gdk.EventMask.BUTTON_RELEASE_MASK
-            | Gdk.EventMask.POINTER_MOTION_MASK
-            | Gdk.EventMask.KEY_PRESS_MASK
-        )
-        self.window.set_can_focus(True)
+        self.root = make_root(monitor, "Ubuntu Tiling")
+        self.canvas = make_canvas(self.root, monitor)
+        self.canvas.bind("<ButtonPress-1>", self._on_press)
+        self.canvas.bind("<Double-Button-1>", self._on_double)
+        self.canvas.bind("<ButtonPress-3>", self._on_right)
+        self.canvas.bind("<B1-Motion>", self._on_motion)
+        self.canvas.bind("<ButtonRelease-1>", self._on_release)
+        self.root.bind("<Key>", self._on_key)
+        self.canvas.bind("<Key>", self._on_key)
+        self.root.protocol("WM_DELETE_WINDOW", self._cancel)
+        self.canvas.focus_set()
+        self._redraw()
+
+    def _root_xy(self, event) -> tuple[int, int]:
+        return int(event.x) + self.monitor.x, int(event.y) + self.monitor.y
 
     def _rects(self) -> list[Rect]:
         return [z.frac.to_rect(self.workarea) for z in self.zones]
@@ -152,17 +129,27 @@ class ZoneEditor:
     def _renumber(self) -> None:
         self.zones = number_left_to_right(self.zones, self.workarea)
 
-    def _on_draw(self, _area, cr) -> bool:
-        paint_chrome(cr, self.monitor, self.workarea, HINT + f"   gap {self.config.gap}px")
-        rects = self._rects()
-        for i, (zone, rect) in enumerate(zip(self.zones, rects)):
-            paint_zone(cr, zone, rect, selected=i == self.selected)
+    def _redraw(self) -> None:
+        self.canvas.delete("zone")
+        paint_chrome(
+            self.canvas,
+            self.monitor,
+            self.workarea,
+            f"gap {self.config.gap}px   drag to draw sections   Super+Alt snaps after you save",
+            [SNAP_SHORTCUTS, EDITOR_SHORTCUTS],
+        )
+        for i, (zone, rect) in enumerate(zip(self.zones, self._rects())):
+            paint_zone(
+                self.canvas,
+                zone,
+                rect,
+                self.monitor,
+                selected=i == self.selected,
+                shortcut=zone_shortcut(zone.id),
+            )
         if self.preview is not None and self.preview.w >= 8 and self.preview.h >= 8:
-            paint_zone(cr, Zone("+", Frac(0, 0, 1, 1)), self.preview, selected=True, label="+")
-        return False
-
-    def _event_xy(self, event) -> tuple[int, int]:
-        return int(event.x) + self.monitor.x, int(event.y) + self.monitor.y
+            paint_zone(self.canvas, Zone("+", Frac(0, 0, 1, 1)), self.preview, self.monitor, selected=True, label="+")
+        self.canvas.tag_raise("chrome")
 
     def _zone_index_at(self, x: int, y: int) -> int | None:
         hits = [(i, r) for i, r in enumerate(self._rects()) if r.contains_point(x, y) or hit_edges(r, x, y)]
@@ -170,64 +157,62 @@ class ZoneEditor:
             return None
         return min(hits, key=lambda item: item[1].area())[0]
 
-    def _on_press(self, _widget, event) -> bool:
-        x, y = self._event_xy(event)
-        if event.button == 3:
-            idx = self._zone_index_at(x, y)
-            if idx is not None:
-                self._push_undo()
-                del self.zones[idx]
-                self._renumber()
-                self.selected = min(idx, len(self.zones) - 1) if self.zones else None
-                self.area.queue_draw()
-            return True
-        if event.type == self.Gdk.EventType.DOUBLE_BUTTON_PRESS and event.button == 1:
-            idx = self._zone_index_at(x, y)
-            if idx is not None:
-                self._split(idx)
-            return True
-        if event.button != 1:
-            return False
+    def _on_right(self, event) -> None:
+        x, y = self._root_xy(event)
+        idx = self._zone_index_at(x, y)
+        if idx is None:
+            return
+        self._push_undo()
+        del self.zones[idx]
+        self._renumber()
+        self.selected = min(idx, len(self.zones) - 1) if self.zones else None
+        self._redraw()
+
+    def _on_double(self, event) -> None:
+        x, y = self._root_xy(event)
+        idx = self._zone_index_at(x, y)
+        if idx is not None:
+            self._split(idx)
+
+    def _on_press(self, event) -> None:
+        x, y = self._root_xy(event)
         idx = self._zone_index_at(x, y)
         if idx is None:
             if not self.workarea.contains_point(x, y):
-                return True
+                return
             self.drag = Drag("create", x, y)
             self.selected = None
-            return True
+            self._redraw()
+            return
         rect = self._rects()[idx]
-        edges = hit_edges(rect, x, y) or "m"
         self.selected = idx
         self._push_undo()
-        self.drag = Drag("edit", x, y, origin=rect, index=idx, edges=edges)
-        self.area.queue_draw()
-        return True
+        self.drag = Drag("edit", x, y, origin=rect, index=idx, edges=hit_edges(rect, x, y) or "m")
+        self._redraw()
 
-    def _on_motion(self, _widget, event) -> bool:
+    def _on_motion(self, event) -> None:
         if self.drag is None:
-            return False
-        x, y = self._event_xy(event)
+            return
+        x, y = self._root_xy(event)
         if self.drag.kind == "create":
             x0, x1 = sorted((self.drag.start_x, x))
             y0, y1 = sorted((self.drag.start_y, y))
-            preview = Rect(x0, y0, x1 - x0, y1 - y0).clamp_to(self.workarea)
-            self.preview = preview
-            self.area.queue_draw()
-            return True
+            self.preview = Rect(x0, y0, x1 - x0, y1 - y0).clamp_to(self.workarea)
+            self._redraw()
+            return
         if self.drag.origin is None or self.drag.index is None:
-            return False
-        dx = x - self.drag.start_x
-        dy = y - self.drag.start_y
-        rect = apply_resize(self.drag.origin, self.drag.edges, dx, dy, self.workarea)
+            return
+        rect = apply_resize(
+            self.drag.origin, self.drag.edges, x - self.drag.start_x, y - self.drag.start_y, self.workarea
+        )
         zone = self.zones[self.drag.index]
         self.zones[self.drag.index] = Zone(zone.id, Frac.from_rect(rect, self.workarea))
-        self.area.queue_draw()
-        return True
+        self._redraw()
 
-    def _on_release(self, _widget, event) -> bool:
+    def _on_release(self, event) -> None:
         if self.drag is None:
-            return False
-        x, y = self._event_xy(event)
+            return
+        x, y = self._root_xy(event)
         if self.drag.kind == "create":
             x0, x1 = sorted((self.drag.start_x, x))
             y0, y1 = sorted((self.drag.start_y, y))
@@ -241,8 +226,7 @@ class ZoneEditor:
             self._renumber()
         self.drag = None
         self.preview = None
-        self.area.queue_draw()
-        return True
+        self._redraw()
 
     def _split(self, idx: int) -> None:
         rect = self._rects()[idx]
@@ -256,87 +240,81 @@ class ZoneEditor:
         self.zones.insert(idx, Zone("tmp", Frac.from_rect(a, self.workarea)))
         self._renumber()
         self.selected = idx
-        self.area.queue_draw()
+        self._redraw()
 
     def _set_preset(self, zones: list[Zone]) -> None:
         self._push_undo()
         self.zones = zones
         self.selected = 0 if zones else None
-        self.area.queue_draw()
+        self._redraw()
 
     def _save(self) -> None:
         self._renumber()
-        self.config.gap = max(0, self.config.gap)
         self.config.set_monitor_zones(self.monitor.connector, self.zones)
         save_config(self.config)
         self.saved = True
+        self.root.destroy()
 
-    def _on_key(self, _widget, event) -> bool:
-        key = event.keyval
-        Gdk = self.Gdk
-        if key in (Gdk.KEY_Escape,):
-            self.Gtk.main_quit()
-            return True
-        if key in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+    def _cancel(self) -> None:
+        self.saved = False
+        self.root.destroy()
+
+    def _on_key(self, event) -> None:
+        key = event.keysym
+        state = event.state
+        ctrl = bool(state & 0x4)
+        if key == "Escape":
+            self._cancel()
+            return
+        if key in {"Return", "KP_Enter"}:
             self._save()
-            self.Gtk.main_quit()
-            return True
-        if key in (Gdk.KEY_s, Gdk.KEY_S) and event.state & Gdk.ModifierType.CONTROL_MASK:
+            return
+        if ctrl and key.lower() == "s":
             self._save()
-            return True
-        if key in (Gdk.KEY_z, Gdk.KEY_Z) and event.state & Gdk.ModifierType.CONTROL_MASK and self.undo:
+            return
+        if ctrl and key.lower() == "z" and self.undo:
             self.zones = self.undo.pop()
             self.selected = 0 if self.zones else None
-            self.area.queue_draw()
-            return True
-        if key in (Gdk.KEY_Delete, Gdk.KEY_BackSpace) and self.selected is not None:
+            self._redraw()
+            return
+        if key in {"Delete", "BackSpace"} and self.selected is not None:
             self._push_undo()
             del self.zones[self.selected]
             self._renumber()
             self.selected = min(self.selected, len(self.zones) - 1) if self.zones else None
-            self.area.queue_draw()
-            return True
-        if key in (Gdk.KEY_g, Gdk.KEY_G):
+            self._redraw()
+            return
+        if key.lower() == "g":
             cycle = [0, 4, 8, 12, 16, 24]
             self.config.gap = cycle[(cycle.index(self.config.gap) + 1) % len(cycle)] if self.config.gap in cycle else 8
-            self.area.queue_draw()
-            return True
-        if key == Gdk.KEY_2:
+            self._redraw()
+            return
+        if key == "2":
             self._set_preset(columns(2))
-            return True
-        if key == Gdk.KEY_3:
+            return
+        if key == "3":
             self._set_preset(columns(3))
-            return True
-        if key == Gdk.KEY_4:
+            return
+        if key == "4":
             self._set_preset(columns(4))
-            return True
-        if key == Gdk.KEY_5:
+            return
+        if key == "5":
             self._set_preset(columns(5))
-            return True
-        if key in (Gdk.KEY_m, Gdk.KEY_M):
+            return
+        if key.lower() == "m":
             self._set_preset(main_stack())
-            return True
-        if key in (Gdk.KEY_x, Gdk.KEY_X):
+            return
+        if key.lower() == "x":
             self._set_preset(grid(2, 2))
-            return True
-        if key in (Gdk.KEY_h, Gdk.KEY_H) and self.selected is not None:
+            return
+        if key.lower() == "h" and self.selected is not None:
             self._split(self.selected)
-            return True
-        if key in (Gdk.KEY_c, Gdk.KEY_C):
+            return
+        if key.lower() == "c":
             self._set_preset([])
-            return True
-        return False
 
     def run(self) -> bool:
-        self.window.show_all()
-        self.window.present()
-        self.window.fullscreen_on_monitor(self.window.get_screen(), 0)
-        self.window.move(self.monitor.x, self.monitor.y)
-        self.window.resize(self.monitor.w, self.monitor.h)
-        self.window.grab_add()
-        self.Gtk.main()
-        self.window.grab_remove()
-        self.window.destroy()
+        self.root.mainloop()
         return self.saved
 
 

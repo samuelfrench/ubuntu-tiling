@@ -2,18 +2,16 @@ from __future__ import annotations
 
 from ubuntu_tiling.config import AppConfig
 from ubuntu_tiling.geometry import Monitor
-from ubuntu_tiling.overlay import paint_chrome, paint_zone
+from ubuntu_tiling.overlay import (
+    PICKER_SHORTCUTS,
+    SNAP_SHORTCUTS,
+    make_canvas,
+    make_root,
+    paint_chrome,
+    paint_zone,
+    zone_shortcut,
+)
 from ubuntu_tiling.wm import SnapTarget, WindowManager
-
-
-def _gtk():
-    import gi
-
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("Gdk", "3.0")
-    from gi.repository import Gdk, Gtk
-
-    return Gdk, Gtk
 
 
 class ZonePicker:
@@ -32,101 +30,66 @@ class ZonePicker:
         self.target_window = target_window
         self.targets = [t for t in targets if t.connector == monitor.connector]
         self.choice: SnapTarget | None = None
-        Gdk, Gtk = _gtk()
-        self.Gdk = Gdk
-        self.Gtk = Gtk
-        self.window = Gtk.Window()
-        self.window.set_title("Ubuntu Tiling")
-        self.window.set_wmclass("ubuntu-tiling", "ubuntu-tiling")
-        self.window.set_decorated(False)
-        self.window.set_skip_taskbar_hint(True)
-        self.window.set_skip_pager_hint(True)
-        self.window.set_keep_above(True)
-        self.window.set_app_paintable(True)
-        self.window.move(monitor.x, monitor.y)
-        self.window.set_default_size(monitor.w, monitor.h)
-        screen = self.window.get_screen()
-        visual = screen.get_rgba_visual()
-        if visual is not None:
-            self.window.set_visual(visual)
-        self.area = Gtk.DrawingArea()
-        self.window.add(self.area)
-        self.area.connect("draw", self._on_draw)
-        self.window.connect("button-press-event", self._on_press)
-        self.window.connect("key-press-event", self._on_key)
-        self.window.connect("delete-event", lambda *_: Gtk.main_quit())
-        self.window.set_events(
-            Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.KEY_PRESS_MASK
-        )
-        self.window.set_can_focus(True)
+        self.root = make_root(monitor, "Ubuntu Tiling")
+        self.canvas = make_canvas(self.root, monitor)
+        self.canvas.bind("<ButtonPress-1>", self._on_click)
+        self.root.bind("<Key>", self._on_key)
+        self.canvas.bind("<Key>", self._on_key)
+        self.root.protocol("WM_DELETE_WINDOW", self._cancel)
+        self.canvas.focus_set()
+        self._redraw()
 
-    def _on_draw(self, _area, cr) -> bool:
+    def _redraw(self) -> None:
+        self.canvas.delete("zone")
         paint_chrome(
-            cr,
+            self.canvas,
             self.monitor,
             self.workarea,
-            "click a zone or press 1-9 to snap the previous window   Esc cancels",
+            "click a numbered section or press its key",
+            [SNAP_SHORTCUTS, PICKER_SHORTCUTS],
         )
         for target in self.targets:
-            paint_zone(cr, target.zone, target.rect, selected=False)
-        return False
-
-    def _event_xy(self, event) -> tuple[int, int]:
-        return int(event.x) + self.monitor.x, int(event.y) + self.monitor.y
+            paint_zone(
+                self.canvas,
+                target.zone,
+                target.rect,
+                self.monitor,
+                selected=False,
+                shortcut=zone_shortcut(target.zone.id),
+            )
+        self.canvas.tag_raise("chrome")
 
     def _pick(self, target: SnapTarget) -> None:
         self.choice = target
-        self.Gtk.main_quit()
+        self.root.destroy()
 
-    def _on_press(self, _widget, event) -> bool:
-        x, y = self._event_xy(event)
+    def _cancel(self) -> None:
+        self.choice = None
+        self.root.destroy()
+
+    def _on_click(self, event) -> None:
+        x = int(event.x) + self.monitor.x
+        y = int(event.y) + self.monitor.y
         for target in self.targets:
             if target.rect.contains_point(x, y):
                 self._pick(target)
-                return True
-        return True
+                return
 
-    def _on_key(self, _widget, event) -> bool:
-        key = event.keyval
-        if key == self.Gdk.KEY_Escape:
-            self.Gtk.main_quit()
-            return True
-        names = {
-            self.Gdk.KEY_1: "1",
-            self.Gdk.KEY_2: "2",
-            self.Gdk.KEY_3: "3",
-            self.Gdk.KEY_4: "4",
-            self.Gdk.KEY_5: "5",
-            self.Gdk.KEY_6: "6",
-            self.Gdk.KEY_7: "7",
-            self.Gdk.KEY_8: "8",
-            self.Gdk.KEY_9: "9",
-            self.Gdk.KEY_KP_1: "1",
-            self.Gdk.KEY_KP_2: "2",
-            self.Gdk.KEY_KP_3: "3",
-            self.Gdk.KEY_KP_4: "4",
-            self.Gdk.KEY_KP_5: "5",
-            self.Gdk.KEY_KP_6: "6",
-            self.Gdk.KEY_KP_7: "7",
-            self.Gdk.KEY_KP_8: "8",
-            self.Gdk.KEY_KP_9: "9",
-        }
-        zone_id = names.get(key)
-        if zone_id:
+    def _on_key(self, event) -> None:
+        if event.keysym == "Escape":
+            self._cancel()
+            return
+        key = event.keysym
+        if key.startswith("KP_"):
+            key = key[3:]
+        if key.isdigit():
             for target in self.targets:
-                if target.zone.id == zone_id:
+                if target.zone.id == key:
                     self._pick(target)
-                    return True
-        return True
+                    return
 
     def run(self) -> SnapTarget | None:
-        self.window.show_all()
-        self.window.present()
-        self.window.fullscreen_on_monitor(self.window.get_screen(), 0)
-        self.window.grab_add()
-        self.Gtk.main()
-        self.window.grab_remove()
-        self.window.destroy()
+        self.root.mainloop()
         return self.choice
 
 
