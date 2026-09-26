@@ -25,8 +25,13 @@ PY
 
 case "${1:-install}" in
 install)
-    if ! gnome-extensions info tiling-assistant@ubuntu.com >/dev/null 2>&1 &&
-       ! gnome-extensions info tiling-assistant@leleat-on-github >/dev/null 2>&1; then
+    found=
+    for dir in "${XDG_DATA_HOME:-$HOME/.local/share}" /usr/local/share /usr/share; do
+        for ta in tiling-assistant@ubuntu.com tiling-assistant@leleat-on-github; do
+            [ -f "$dir/gnome-shell/extensions/$ta/metadata.json" ] && found=$ta
+        done
+    done
+    if [ -z "$found" ]; then
         echo "Tiling Assistant not found. On Ubuntu: sudo apt install gnome-shell-extension-ubuntu-tiling-assistant" >&2
         exit 1
     fi

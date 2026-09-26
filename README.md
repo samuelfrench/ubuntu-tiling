@@ -2,7 +2,7 @@
 
 Adds columns to Ubuntu's built-in tiling.
 
-> **Status (2026-09-26): work in progress.** The column math passes its unit tests. The extension has not been loaded in GNOME Shell yet, and the integration test has not been run. See `TODO.md`.
+> **Status (2026-09-26):** passes 39 unit tests and the headless GNOME Shell 46 integration test (3, 4 and 5 columns via Super+Left/Right and drag). Not yet tried on a live desktop session; see `TODO.md`.
 
 Ubuntu 24.04 ships **Tiling Assistant** (`tiling-assistant@ubuntu.com`). It tiles halves and quarters. With two windows side by side, sending a third window to the right edge makes it **cover** the right window.
 
@@ -66,7 +66,9 @@ node --test tests/*.test.mjs        # column math
 tests/integration/run.py            # real GNOME Shell, headless
 ```
 
-The integration test starts an isolated headless GNOME Shell (own D-Bus session, own dconf, own extension dir), opens GTK windows, and sends real Super+Left/Right keypresses and a Super+drag through virtual input devices. It runs twice: stock Tiling Assistant (third window covers the right half) and with this extension (windows become 3, 4, then 5 equal columns). It is built to stay isolated from the running desktop session (see the gotchas in `TODO.md`).
+The integration test starts a headless GNOME Shell and opens GTK windows in it. It sends real Super+Left/Right keypresses and a Super+drag through virtual input devices. It runs twice: stock Tiling Assistant (third window covers the right half) and with this extension (windows become 3, 4, then 5 equal columns, and disabling the extension restores stock behavior). Takes about 25 seconds.
+
+Isolation from the desktop you're using: its own D-Bus session that can only start dconf, its own dconf/data/cache dirs, its own `XDG_RUNTIME_DIR`, software rendering (no GPU), lock screen and idle disabled, `--mode=user`, `nice -n 10`. Known unavoidable contact: on startup every GNOME Shell calls GDM `RegisterSession` on the system bus, which is a no-op for a session that's already registered.
 
 ## License
 

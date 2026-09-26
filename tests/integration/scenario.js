@@ -2,6 +2,7 @@
 // by run.py. Drives real input through Clutter virtual devices.
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
+import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 let keyboard = null;
@@ -38,17 +39,37 @@ function workArea() {
     return global.workspace_manager.get_active_workspace().get_work_area_for_monitor(0);
 }
 
+const TILING_ASSISTANT = 'tiling-assistant@ubuntu.com';
+const COLUMNS = 'tiling-columns@samuelfrench.github.io';
+const SETTLED = [1, 3, 4]; // ExtensionState ACTIVE, ERROR, OUT_OF_DATE (GNOME 46)
+
+/**
+ * Waits until startup is over (extensions loaded, panel struts applied), hides
+ * the startup overview, and waits for its modal grab to go away. Keybindings
+ * registered for ActionMode.NORMAL don't fire before that.
+ */
 export async function ready() {
     devices();
-    Main.overview.hide();
-    for (let i = 0; i < 50 && (Main.overview.visible || Main.overview.animationInProgress); i++)
+    const ext = uuid => Main.extensionManager.lookup(uuid);
+    for (let i = 0; i < 150 && Main.layoutManager._startingUp; i++)
         await sleep(100);
-    const ext = uuid => Main.extensionManager.lookup(uuid)?.state ?? null;
+    for (let i = 0; i < 100 && !SETTLED.includes(ext(TILING_ASSISTANT)?.state); i++)
+        await sleep(100);
+    for (let i = 0; i < 100 && ext(COLUMNS) && !SETTLED.includes(ext(COLUMNS).state); i++)
+        await sleep(100);
+    Main.overview.hide();
+    for (let i = 0; i < 100 && Main.actionMode !== Shell.ActionMode.NORMAL; i++)
+        await sleep(100);
     return {
-        overviewVisible: Main.overview.visible,
+        startingUp: Main.layoutManager._startingUp,
+        actionMode: Main.actionMode,
         workArea: plain(workArea()),
-        tilingAssistant: ext('tiling-assistant@ubuntu.com'),
-        columns: ext('tiling-columns@samuelfrench.github.io'),
+        tilingAssistant: ext(TILING_ASSISTANT)?.state ?? null,
+        columns: ext(COLUMNS)?.state ?? null,
+        errors: {
+            tilingAssistant: `${ext(TILING_ASSISTANT)?.error ?? ''}`,
+            columns: `${ext(COLUMNS)?.error ?? ''}`,
+        },
     };
 }
 
@@ -108,6 +129,19 @@ export async function superDrag(title, x, y) {
     pointer.notify_button(now(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.RELEASED);
     await sleep(1000);
     return {grabbed};
+}
+
+/** Closes a modal (e.g. Tiling Assistant's Tiling Popup) with Escape. Returns how many were open. */
+export async function dismissModal() {
+    devices();
+    const open = Main.modalCount;
+    if (open) {
+        key(Clutter.KEY_Escape, Clutter.KeyState.PRESSED);
+        await sleep(50);
+        key(Clutter.KEY_Escape, Clutter.KeyState.RELEASED);
+        await sleep(500);
+    }
+    return open;
 }
 
 export function state() {
