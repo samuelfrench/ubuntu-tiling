@@ -2,7 +2,7 @@
 
 Adds columns to Ubuntu's built-in tiling.
 
-> **Status (2026-09-26):** passes 39 unit tests and the headless GNOME Shell 46 integration test (3, 4 and 5 columns via Super+Left/Right and drag). Not yet tried on a live desktop session; see `TODO.md`.
+> **Status (2026-09-26):** passes 52 unit tests and the headless GNOME Shell 46 integration test (3, 4 and 5 columns via Super+Left/Right and drag). Not yet tried on a live desktop session; see `TODO.md`.
 
 Ubuntu 24.04 ships **Tiling Assistant** (`tiling-assistant@ubuntu.com`). It tiles halves and quarters. With two windows side by side, sending a third window to the right edge makes it **cover** the right window.
 
