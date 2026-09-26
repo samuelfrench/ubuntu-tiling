@@ -37,7 +37,7 @@ install)
     fi
     rm -rf "$DEST"
     mkdir -p "$DEST"
-    cp "$SRC/metadata.json" "$SRC/extension.js" "$SRC/columns.js" "$DEST/"
+    cp "$SRC/metadata.json" "$SRC/extension.js" "$SRC/hooks.js" "$SRC/columns.js" "$DEST/"
     edit_list disabled-extensions remove
     edit_list enabled-extensions add
     echo "installed $DEST"

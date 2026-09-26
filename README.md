@@ -57,12 +57,14 @@ Tiling Assistant decides where a window goes in `TilingWindowManager.getTileFor(
 - `getTileFor`: for left/right, if the other tiled windows are full-height columns that span the screen, return the new column's slot.
 - `tile`: if a window is being tiled into that slot, shrink the existing columns first, then tile it.
 
-Disabling the extension puts the original methods back. The column math is in `extension/columns.js` (pure JS, no GNOME imports).
+Disabling the extension puts the original methods back. The wrappers live in `extension/hooks.js` and the column math in `extension/columns.js`; both are plain JS with no GNOME imports, so they are unit-tested under node with fakes. `extension/extension.js` is only the GNOME glue (find Tiling Assistant, import its modules, install/restore).
+
+Guards: a window Tiling Assistant would refuse to tile (skip-taskbar, not movable or resizable) leaves the columns alone, and if Tiling Assistant still returns without tiling it, the columns are put back. Windows that are only non-resizable because they are maximized or fullscreen are inserted normally.
 
 ## Tests
 
 ```bash
-node --test tests/*.test.mjs        # column math
+node --test tests/*.test.mjs        # column math + hooks with fake Tiling Assistant objects
 tests/integration/run.py            # real GNOME Shell, headless
 ```
 
