@@ -14,6 +14,11 @@ Sam, 2026-09-26: "essentially throw out what we have, and figure out how to simp
 - **Not yet verified:** Sam's live X11 session (5120x1440, work area `5054x1408+66+32`, Ubuntu session mode with dock/DING). The headless test runs Wayland + `--mode=user`.
 - Host: Ubuntu 24.04.4, GNOME Shell 46.0, X11 `DISPLAY=:1`, `GNOME_SHELL_SESSION_MODE=ubuntu`. Stock tiling `tiling-assistant@ubuntu.com` v46 (deb `46-1ubuntu1.1`), untouched.
 
+## Repo + install state
+
+- `main` = `beba665` (fast-forwarded from branch `tiling-columns`, which was deleted local + remote). CI `test` green on `main` (run 36255136703).
+- Installed on this host 2026-09-26 11:21 via `./install.sh`: `~/.local/share/gnome-shell/extensions/tiling-columns@samuelfrench.github.io/` (matches repo `extension/`), live `enabled-extensions` = `['tiling-columns@samuelfrench.github.io']` (was `@as []`; Ubuntu's own extensions come from the session mode, not this key). NOT loaded yet: the live shell (PID 5068) only discovers new extensions at startup.
+
 ## Next steps
 
 1. **[Sam]** Restart GNOME Shell to load the extension (X11: Alt+F2, type `r`, Enter — windows stay open; or log out/in). Then: Super+Left on A, Super+Right on B, focus C, Super+Right → three columns. Also try dragging a 4th window to the right edge. Check `gnome-extensions info tiling-columns@samuelfrench.github.io` → `State: ACTIVE`.
