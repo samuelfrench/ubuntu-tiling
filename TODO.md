@@ -2,7 +2,7 @@
 
 Live source of truth. Update in the same beat as work changes.
 
-## Current (2026-09-26) — extension verified headless; awaiting Sam's live try
+## Current (2026-09-26) — `beba665` verified headless; `4b804d5` review fixes node-tested; awaiting headless re-run + Sam's live try
 
 Sam, 2026-09-26: "essentially throw out what we have, and figure out how to simply extend the existing ubuntu tiling feature to support allowing more tiling (like I want to have a 2 pane view and add a third item to the right)". Later: "continue but try not to cause my computer to crash".
 
@@ -21,7 +21,7 @@ Sam, 2026-09-26: "essentially throw out what we have, and figure out how to simp
 
 ## Repo + install state
 
-- `main` = `4b804d5` (review fixes; earlier `beba665` = the headless-verified code, `062c48d` = TODO). CI `test` green on `4b804d5` (run 36261360395).
+- `main` code = `4b804d5` (review fixes; commits after it are TODO/docs only). Earlier `beba665` = the headless-verified code. CI `test` green on `4b804d5` (run 36261360395).
 - Installed on this host 2026-09-26 via `./install.sh` (re-run after `4b804d5`): `~/.local/share/gnome-shell/extensions/tiling-columns@samuelfrench.github.io/` = repo `extension/` (4 files, `diff -r` clean), live `enabled-extensions` = `['tiling-columns@samuelfrench.github.io']` (was `@as []`; Ubuntu's own extensions come from the session mode, not this key). NOT loaded yet: the live shell (PID 5068) only discovers new extensions at startup.
 
 ## Next steps
