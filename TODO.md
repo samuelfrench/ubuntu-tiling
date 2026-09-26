@@ -10,17 +10,23 @@ Sam, 2026-09-26: "essentially throw out what we have, and figure out how to simp
 - **Verified 2026-09-26 11:18 (headless, isolated):** `tests/integration/run.py` → `PASS` in ~25 s. Measured on a 2560x688 work area:
   - stock: A|B halves + C Super+Right → C covers B (`C x=1280 w=1280`, B unchanged).
   - columns: + C Super+Right → `854/853/853`; + D dragged to right edge → `641/639/640/640`; + E Super+Left → `512/513/511/512/512`; Tiling Popup not opened (no free space); after `disableExtension`, F Super+Right → stock right half `1280`.
-- Unit: `node --test tests/*.test.mjs` → 39/39.
-- **Not yet verified:** Sam's live X11 session (5120x1440, work area `5054x1408+66+32`, Ubuntu session mode with dock/DING). The headless test runs Wayland + `--mode=user`.
+- Unit: `node --test tests/*.test.mjs` → 52/52 (39 planner + 13 hooks with fake Tiling Assistant objects).
+- **Review 2026-09-26 (Sam: "double check for bugs"), fixed in `4b804d5`, node-tested, NOT yet re-run headless:**
+  1. `enable()` was async → a `disable()` before the dynamic imports settled (every screen lock disables/re-enables all extensions) left the wrappers installed with no restore; the next `enable()` captured our wrapper as "original" and double-wrapped. Fix: sync `enable()` (throws synchronously when TA is missing → state ERROR) + session token checked after the imports.
+  2. `tile()` wrapper shrank the columns before TA's own early returns (`is_skip_taskbar`, `!allows_move || !allows_resize`), so a fixed-size window (calculator-style) or skip-taskbar window shrank the columns and stayed floating. Fix: mirror the checks (maximized/fullscreen windows pass, since TA unmaximizes before checking) and roll the columns back if TA still returns without tiling the window.
+  3. Wrapper logic was untestable under node (GNOME imports). Fix: moved to `extension/hooks.js` (`installHooks(deps) → restore`), `extension.js` is glue only. `install.sh` now copies 4 files.
+  - Verified against TA source while reviewing (no change needed): `Rect` 1-arg constructor accepts plain `{x,y,width,height}`; `Shortcuts.LEFT/RIGHT` = `tile-left-half`/`tile-right-half`; the drag path's `workArea` (`window.get_work_area_for_monitor(this._monitorNr)`) equals the one the tile wrapper derives from `params.monitorNr`; `toggleTiling` untiles when the rect equals `tiledRect` (so Super+Right on the rightmost column untiles it, stock behavior); no listener for TA's `window-tiled` signal in Ubuntu's TA; live TA settings are schema defaults (`disable-tile-groups false`, popup on, animations on, gaps 0, `dynamic-keybinding-behavior 0`).
+- **Not yet verified:** (a) the headless integration test on `4b804d5` (last PASS was on `beba665`'s extension.js; needs Sam's go to start a test shell); (b) Sam's live X11 session (5120x1440, work area `5054x1408+66+32`, Ubuntu session mode with dock/DING). The headless test runs Wayland + `--mode=user`.
 - Host: Ubuntu 24.04.4, GNOME Shell 46.0, X11 `DISPLAY=:1`, `GNOME_SHELL_SESSION_MODE=ubuntu`. Stock tiling `tiling-assistant@ubuntu.com` v46 (deb `46-1ubuntu1.1`), untouched.
 
 ## Repo + install state
 
-- `main` = `beba665` (fast-forwarded from branch `tiling-columns`, which was deleted local + remote). CI `test` green on `main` (run 36255136703).
-- Installed on this host 2026-09-26 11:21 via `./install.sh`: `~/.local/share/gnome-shell/extensions/tiling-columns@samuelfrench.github.io/` (matches repo `extension/`), live `enabled-extensions` = `['tiling-columns@samuelfrench.github.io']` (was `@as []`; Ubuntu's own extensions come from the session mode, not this key). NOT loaded yet: the live shell (PID 5068) only discovers new extensions at startup.
+- `main` = `4b804d5` (review fixes; earlier `beba665` = the headless-verified code, `062c48d` = TODO). CI `test` green on `4b804d5` (run 36261360395).
+- Installed on this host 2026-09-26 via `./install.sh` (re-run after `4b804d5`): `~/.local/share/gnome-shell/extensions/tiling-columns@samuelfrench.github.io/` = repo `extension/` (4 files, `diff -r` clean), live `enabled-extensions` = `['tiling-columns@samuelfrench.github.io']` (was `@as []`; Ubuntu's own extensions come from the session mode, not this key). NOT loaded yet: the live shell (PID 5068) only discovers new extensions at startup.
 
 ## Next steps
 
+0. Re-run `tests/integration/run.py` on `4b804d5` (≈25 s, isolated headless shell; ask Sam first per memory `ask-before-starting-gnome-shell`). Expect the same PASS as 11:18 (3/4/5 columns, no popup after drag, F at 1280 after disable). If it fails, `./install.sh` from `beba665`'s `extension/` is the known-good fallback (`git show beba665:extension/extension.js`).
 1. **[Sam]** Restart GNOME Shell to load the extension (X11: Alt+F2, type `r`, Enter — windows stay open; or log out/in). Then: Super+Left on A, Super+Right on B, focus C, Super+Right → three columns. Also try dragging a 4th window to the right edge. Check `gnome-extensions info tiling-columns@samuelfrench.github.io` → `State: ACTIVE`.
    - Back out without restart: `gnome-extensions disable tiling-columns@samuelfrench.github.io` (restores the original Tiling Assistant methods immediately). Remove: `./install.sh uninstall`.
 2. After Sam confirms on the live session: drop "Not yet tried on a live desktop session" from the README status line; record the live result here and in memory.
@@ -72,6 +78,7 @@ Sam, 2026-09-26: "essentially throw out what we have, and figure out how to simp
 
 ## Known non-blocking failures / gotchas — check here BEFORE diagnosing
 
+- Drag path identity: `getTileFor` has no window argument, so the wrapper (like stock TA's own adaptive tiling) assumes the dragged window is `global.display.focus_window`. If it isn't (unfocused window Super-dragged), the preview slot and the drop plan can disagree and the window lands on the preview slot without the columns moving. Not observed; stock TA has the same assumption. Fix if it shows up: track the grab window via `global.display` `grab-op-begin` `(display, window, op)` (TA's `moveHandler.js:22` uses that signature).
 - Test shell stderr noise: `Failed to set environment variable WAYLAND_DISPLAY for gnome-session`, `Error connecting to the screencast service`, `Error in size change accounting`. Harmless.
 - Pushes: GitHub rejects commits authored with `samfrench@gmail.com` (`push declined due to email privacy restrictions`). Repo-local config sets `user.name samuelfrench` / `user.email 5598505+samuelfrench@users.noreply.github.com` (lost once when `.git` was replaced; re-set 2026-09-26).
 - 2026-09-26: local `.git` had 9 zero-byte objects (`fatal: bad object HEAD`); fixed by swapping in a fresh clone's `.git`.
@@ -79,6 +86,6 @@ Sam, 2026-09-26: "essentially throw out what we have, and figure out how to simp
 ## Next session FIRST
 
 - `git fetch && git status`. Read this file, then the spec.
-- Ask Sam whether the live try (Next steps 1) worked before changing behavior.
+- Ask Sam whether the live try (Next steps 1) worked before changing behavior. If he hasn't tried it yet, get his go for Next steps 0 (headless re-run of `4b804d5`).
 - Ask Sam before starting any GNOME Shell (even the isolated test) — see memory `ask-before-starting-gnome-shell`.
 - Repo: https://github.com/samuelfrench/ubuntu-tiling
