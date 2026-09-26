@@ -73,7 +73,7 @@ Then, while the first headless integration run was about to start: **"pause for 
 ## Next session FIRST
 
 - Read this file top to bottom, then the spec. Ask Sam before step 3.
-- `git fetch && git switch tiling-columns`. WIP commit `c54c5c0` (plus a TODO-only commit on top). `main` = `a02fdcc`.
+- `git fetch && git switch tiling-columns`. WIP commit `c54c5c0` plus TODO-only commits on top. `main` = `a02fdcc`. The local checkout is left on `tiling-columns`.
 - Repo: https://github.com/samuelfrench/ubuntu-tiling (branch `tiling-columns`)
 - CI on the branch: GitHub Actions `test` green for `c54c5c0` (run 36252641443) and `68fd602` (run 36252649517), node unit tests only.
 - Exit state 2026-09-26: nothing running, no timers/crons, no background agents. Deploy: none (local desktop extension; install is step 5).
