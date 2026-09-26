@@ -1,8 +1,0 @@
-{
-  "uuid": "ubuntu-tiling@samuelfrench.github.io",
-  "name": "Ubuntu Tiling",
-  "description": "D-Bus helper so ubuntu-tiling can snap windows on GNOME Wayland.",
-  "shell-version": ["46", "47", "48"],
-  "session-modes": ["user"],
-  "url": "https://github.com/samuelfrench/ubuntu-tiling"
-}

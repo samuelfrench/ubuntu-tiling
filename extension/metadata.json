@@ -1,0 +1,10 @@
+{
+  "uuid": "tiling-columns@samuelfrench.github.io",
+  "name": "Tiling Assistant Columns",
+  "description": "Extends Ubuntu's Tiling Assistant. When two or more tiled columns fill the screen, Super+Left/Right or dragging a window to the left/right screen edge adds it as a new column instead of covering one. Requires Tiling Assistant.",
+  "shell-version": [
+    "46"
+  ],
+  "url": "https://github.com/samuelfrench/ubuntu-tiling",
+  "version": 1
+}

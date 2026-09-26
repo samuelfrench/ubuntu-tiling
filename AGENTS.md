@@ -1,7 +1,7 @@
 # ubuntu-tiling
 
-Python GTK3 overlay + X11 EWMH snapper. Runtime is `/usr/bin/python3` (system 3.12 + gi), not conda.
+GNOME Shell extension that adds column insertion to Ubuntu's Tiling Assistant. Read `TODO.md` and `CLAUDE.md` before work.
 
-Read `TODO.md` before work. Tests: `python -m pytest` from repo root (conda pytest is fine; tests are pure geometry).
-
-Do not disable `tiling-assistant@ubuntu.com`. Snaps use `<Super><Alt>1..9`.
+- Unit tests: `node --test tests/*.test.mjs`. Integration: `tests/integration/run.py` (runs its own isolated headless GNOME Shell; never touches the live session's dconf).
+- The headless shell must use `--mode=user` (Ubuntu mode loads DING, which restarts the live session's desktop icons).
+- Do not disable `tiling-assistant@ubuntu.com`.
