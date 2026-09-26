@@ -67,9 +67,12 @@ Then, while the first headless integration run was about to start: **"pause for 
 
 - Headless test shell MUST run with `--mode=user` and `GNOME_SHELL_SESSION_MODE` unset (`run.py` does both). In `ubuntu` mode it loads DING, and DING's enable kills other `ding.js` processes, which relaunched the LIVE session's desktop-icons process during the first spike (2026-09-26 09:47:30, live gnome-shell PID 5068 logged "Launching DING process"; auto-recovered; ibus, portals, nautilus, evolution in the live session were NOT restarted — verified by process age).
 - Headless shell spam: `fusermount3 ... /run/user/1000/gvfs: Permission denied`, xdg-desktop-portal "connection is closed" criticals on shutdown. Harmless; they come from the private D-Bus session.
+- Push rejected with `push declined due to email privacy restrictions` if commits use `samfrench@gmail.com` (global git config). Repo-local config now sets `user.name samuelfrench` / `user.email 5598505+samuelfrench@users.noreply.github.com` (lost once when `.git` was replaced; re-set 2026-09-26).
 - 2026-09-26: local `.git` had 9 zero-byte objects (`fatal: bad object HEAD`). Fixed by swapping in a fresh clone's `.git` (worktree was byte-identical to `origin/main` `a02fdcc`). Corrupt copy kept at session scratchpad `corrupt-dotgit-2026-09-26` (not durable).
 
 ## Next session FIRST
 
 - Read this file top to bottom, then the spec. Ask Sam before step 3.
-- Repo: https://github.com/samuelfrench/ubuntu-tiling
+- `git fetch && git switch tiling-columns`. WIP commit `c54c5c0` (plus a TODO-only commit on top). `main` = `a02fdcc`.
+- Repo: https://github.com/samuelfrench/ubuntu-tiling (branch `tiling-columns`)
+- Exit state 2026-09-26: nothing running, no timers/crons, no background agents. Deploy: none (local desktop extension; install is step 5).
