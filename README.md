@@ -1,39 +1,37 @@
-# ubuntu-tiling
+# Ubuntu window layouts
 
-Adds columns to Ubuntu's built-in tiling.
+Six or eight windows on one screen, with a native GNOME picker, keyboard shortcuts and undo. Extends Ubuntu's built-in **Tiling Assistant** and keeps the existing column-insertion controls.
 
-> **Status (2026-09-26):** passes 52 unit tests and the headless GNOME Shell 46 integration test (3, 4 and 5 columns via Super+Left/Right and drag). Not yet tried on a live desktop session; see `TODO.md`.
-
-Ubuntu 24.04 ships **Tiling Assistant** (`tiling-assistant@ubuntu.com`). It tiles halves and quarters. With two windows side by side, sending a third window to the right edge makes it **cover** the right window.
-
-This repo is a small GNOME Shell extension, **Tiling Assistant Columns**, that changes that one case: the third window becomes a **new column**.
-
-```
-Before (stock)            After (this extension)
-+---------+---------+     +------+------+------+
-|    A    |  C (B   |     |  A   |  B   |  C   |
-|         | hidden) |     |      |      |      |
-+---------+---------+     +------+------+------+
-```
+**Development status (2026-10-09):** six/eight-grid controls are implemented and 77 unit tests pass. Native grid integration, final review and installation verification are pending; see generated [TODO.md](TODO.md). The earlier isolated three/four/five-column proof does not verify the new grids.
 
 ## Use
 
-1. Tile two windows the normal way: **Super+Left** on A, **Super+Right** on B (or drag them to the screen edges).
-2. Focus a third window and press **Super+Right**, or drag it to the right screen edge. It becomes a third column. All three are 1/3 wide.
-3. Keep going: **Super+Left** or the left edge adds a column on the left. Four windows on a 5120x1440 ultrawide with the Ubuntu dock (5054 px work area) = four 1263 px columns.
+Click the **grid icon in the top bar**, or press **Super+Alt+Space**. Choose **6 windows (3 × 2)** or **8 windows (4 × 2)**. Click a numbered tile to put your current window there; number keys work while the picker is open. Use **Arrange windows** to lay out the current screen at once.
 
-Details:
+| Action | Shortcut |
+| --- | --- |
+| Open the layout picker | **Super+Alt+Space** |
+| Arrange six windows | **Super+Alt+6** |
+| Arrange eight windows | **Super+Alt+8** |
+| Undo the latest arrangement or placement | **Super+Alt+Z** |
+| Place the selected window while the picker is open | **1–6** or **1–8** |
+| Cancel the picker | **Escape** |
 
-- It only kicks in when 2+ tiled windows already fill the screen as full-height columns. Everything else is stock Tiling Assistant: first half, quarters, maximize, the tiling popup, Ctrl-drag.
-- Existing columns shrink proportionally (60/40 + one more = 40/27/33).
-- The drag preview shows the new column's slot before you let go.
-- Drag the border between two columns to resize both (stock tile-group resizing).
-- To **replace** a column instead of adding one, Ctrl-drag the window onto the middle of that column (stock adaptive tiling).
-- No column goes below 400 px. If adding one would, you get the stock behavior.
+Super is usually the Windows key. Tab and arrow keys navigate the native controls; Enter activates the focused control.
+
+Arrange uses normal, resizable, non-minimized windows on the **focused window's monitor and current workspace**. It picks the six/eight most recently used windows, then preserves their spatial order where practical. Extra windows stay in place, and the picker and notification disclose the count. Fewer windows leave empty tiles. A window that cannot fit triggers a visible message and restores the previous layout.
+
+Undo restores the preceding positions and tiling/maximized/fullscreen/always-on-top state; closed windows are ignored. There is one undo step, retained until the next successful layout or extension reload. Undo requires the original workspace and monitor arrangement. Existing Tiling Assistant gaps and shared-border resizing apply.
+
+## Full-height columns
+
+Tile two windows with **Super+Left** and **Super+Right**. Focus a third window and press **Super+Right**, or drag it to that screen edge: it becomes a third column. **Super+Left** adds a column on the left. Existing columns shrink proportionally; no column goes below 400 px. The drag preview shows the insertion slot.
+
+This only applies when two or more full-height tiled columns already fill the monitor. Normal halves, corners, maximize and Tiling Assistant's tiling popup retain their behavior. Ctrl-drag onto the middle of a column uses Tiling Assistant's adaptive placement.
 
 ## Install
 
-Needs GNOME Shell 46 and Tiling Assistant (installed and enabled by default on Ubuntu 24.04).
+Requires GNOME Shell 46 and enabled Tiling Assistant, included with Ubuntu 24.04. Keep `tiling-assistant@ubuntu.com` enabled.
 
 ```bash
 git clone https://github.com/samuelfrench/ubuntu-tiling.git
@@ -41,36 +39,27 @@ cd ubuntu-tiling
 ./install.sh
 ```
 
-Then restart GNOME Shell so it loads the new extension:
+The installer validates and compiles the keyboard schemas before replacing installed files. Then load the new code:
 
 - **X11:** Alt+F2, type `r`, Enter. Windows stay open.
 - **Wayland:** log out and back in.
 
-Check: `gnome-extensions info tiling-columns@samuelfrench.github.io` shows `State: ACTIVE`.
+Check `gnome-extensions info tiling-columns@samuelfrench.github.io` for `State: ACTIVE`, then open the picker with **Super+Alt+Space**. An already active extension continues running its old code until the shell reloads.
 
-Remove: `./install.sh uninstall`.
+Remove with `./install.sh uninstall`.
 
-## How it works
-
-Tiling Assistant decides where a window goes in `TilingWindowManager.getTileFor()` (used by both Super+Arrow and the drag preview) and moves windows in `TilingWindowManager.tile()`. Both are static methods on a class in an ES module. GJS caches modules by file URI, so this extension imports that same module and wraps the two methods:
-
-- `getTileFor`: for left/right, if the other tiled windows are full-height columns that span the screen, return the new column's slot.
-- `tile`: if a window is being tiled into that slot, shrink the existing columns first, then tile it.
-
-Disabling the extension puts the original methods back. The wrappers live in `extension/hooks.js` and the column math in `extension/columns.js`; both are plain JS with no GNOME imports, so they are unit-tested under node with fakes. `extension/extension.js` is only the GNOME glue (find Tiling Assistant, import its modules, install/restore).
-
-Guards: a window Tiling Assistant would refuse to tile (skip-taskbar, not movable or resizable) leaves the columns alone, and if Tiling Assistant still returns without tiling it, the columns are put back. Windows that are only non-resizable because they are maximized or fullscreen are inserted normally.
-
-## Tests
+## Development and verification
 
 ```bash
-node --test tests/*.test.mjs        # column math + hooks with fake Tiling Assistant objects
-tests/integration/run.py            # real GNOME Shell, headless
+node --test tests/*.test.mjs
+node --test scripts/todo/__tests__/*.test.mjs
+node scripts/todo/build.mjs --check
+tests/integration/run.py
 ```
 
-The integration test starts a headless GNOME Shell and opens GTK windows in it. It sends real Super+Left/Right keypresses and a Super+drag through virtual input devices. It runs twice: stock Tiling Assistant (third window covers the right half) and with this extension (windows become 3, 4, then 5 equal columns, and disabling the extension restores stock behavior). Takes about 25 seconds.
+`columns.js` and `grids.js` handle pure planning. `hooks.js` wraps Tiling Assistant's `getTileFor`/`tile` for columns. `gridController.js` serializes reversible operations; `gridControls.js` provides the GNOME adapter, panel icon, modal picker and scoped keybindings. Explicit grid placement calls the original TA tile function and retains its tile groups. Disabling removes controls, shortcuts, pending timers and column hooks, and leaves already placed windows where they are. Undo history lasts for the current extension session.
 
-Isolation from the desktop you're using: its own D-Bus session that can only start dconf, its own dconf/data/cache dirs, its own `XDG_RUNTIME_DIR`, software rendering (no GPU), lock screen and idle disabled, `--mode=user`, `nice -n 10`. Known unavoidable contact: on startup every GNOME Shell calls GDM `RegisterSession` on the system bus, which is a no-op for a session that's already registered.
+The integration harness starts a private headless GNOME Shell with GTK test windows. It uses its own D-Bus session, dconf/data/cache/runtime directories, software rendering and `--mode=user`. Never share the live desktop's runtime directory or use Ubuntu mode, which loads DING. GNOME still calls GDM `RegisterSession` at startup; isolated test-shell permission is required under this project's operating rules and was granted for the October 9 task.
 
 ## License
 

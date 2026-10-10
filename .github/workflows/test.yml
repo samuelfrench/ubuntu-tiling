@@ -17,3 +17,5 @@ jobs:
         run: node scripts/todo/build.mjs --check
       - name: extension metadata is valid JSON
         run: python3 -m json.tool extension/metadata.json > /dev/null
+      - name: extension settings schema
+        run: glib-compile-schemas --strict --dry-run extension/schemas

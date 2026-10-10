@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.tiling-columns" path="/org/gnome/shell/extensions/tiling-columns/">
+    <key name="show-grid-picker" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;space']</default>
+      <summary>Open the six/eight-window layout picker</summary>
+    </key>
+    <key name="arrange-six-windows" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;6']</default>
+      <summary>Arrange windows in three columns and two rows</summary>
+    </key>
+    <key name="arrange-eight-windows" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;8']</default>
+      <summary>Arrange windows in four columns and two rows</summary>
+    </key>
+    <key name="undo-grid-layout" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;z']</default>
+      <summary>Undo the latest grid layout or tile placement</summary>
+    </key>
+  </schema>
+</schemalist>

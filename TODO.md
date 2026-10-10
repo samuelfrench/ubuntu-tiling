@@ -6,7 +6,7 @@
 
 ## Now
 
-- [ ] Easy six- and eight-window layouts — Implement native 3x2 and 4x2 picker, shortcuts, safe arrange and undo; isolated tests authorized 2026-10-09; runtime implementation pending · _product_ · [details](docs/todo/product/six-eight-window-grids.md)
+- [ ] Easy six- and eight-window layouts — Native 3x2/4x2 picker, safe arrange and undo implemented; 77 unit tests pass; isolated integration, review and installation pending · _product_ · [details](docs/todo/product/six-eight-window-grids.md)
 
 ## Waiting on Sam
 

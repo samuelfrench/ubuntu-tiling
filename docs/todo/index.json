@@ -90,7 +90,7 @@
     "due": null,
     "updated": "2026-10-09",
     "owner": "agent",
-    "brief": "Implement native 3x2 and 4x2 picker, shortcuts, safe arrange and undo; isolated tests authorized 2026-10-09; runtime implementation pending",
+    "brief": "Native 3x2/4x2 picker, safe arrange and undo implemented; 77 unit tests pass; isolated integration, review and installation pending",
     "refs": [
       "extension/",
       "tests/integration/run.py",

@@ -35,9 +35,17 @@ install)
         echo "Tiling Assistant not found. On Ubuntu: sudo apt install gnome-shell-extension-ubuntu-tiling-assistant" >&2
         exit 1
     fi
-    rm -rf "$DEST"
+    # Validate and compile in a private staging directory before touching the
+    # installed copy. Retain the old runtime if packaging/schema checks fail.
+    staging=$(mktemp -d)
+    trap 'rm -rf "$staging"' EXIT
+    cp "$SRC/metadata.json" "$SRC/extension.js" "$SRC/hooks.js" "$SRC/columns.js" \
+        "$SRC/grids.js" "$SRC/gridController.js" "$SRC/gridControls.js" "$SRC/stylesheet.css" "$staging/"
+    mkdir -p "$staging/schemas"
+    cp "$SRC/schemas/"*.gschema.xml "$staging/schemas/"
+    glib-compile-schemas --strict "$staging/schemas"
     mkdir -p "$DEST"
-    cp "$SRC/metadata.json" "$SRC/extension.js" "$SRC/hooks.js" "$SRC/columns.js" "$DEST/"
+    cp -R "$staging/." "$DEST/"
     edit_list disabled-extensions remove
     edit_list enabled-extensions add
     echo "installed $DEST"

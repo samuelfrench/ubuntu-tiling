@@ -46,6 +46,7 @@ def prepare_root(mode: str) -> Path:
     shutil.copytree(HERE / "driver", extensions / DRIVER)
     if mode == "columns":
         shutil.copytree(REPO / "extension", extensions / UUID)
+        subprocess.run(["glib-compile-schemas", "--strict", str(extensions / UUID / "schemas")], check=True)
     for sub in ("config", "cache", "state", "runtime"):
         (root / sub).mkdir()
     (root / "runtime").chmod(0o700)
@@ -233,12 +234,100 @@ def inner(mode: str, root: Path) -> None:
         result["after_E_super_left"] = call("state")
 
         if mode == "columns":
+            # Actual grid shortcuts, including maximized/fullscreen restoration.
+            open_window("ut-F")
+            result["before_F_maximize"] = call("state")
+            call("windowAction", "ut-F", "maximize")
+            result["before_six"] = call("state")
+            result["six_status"] = call("gridKey", "6")
+            result["after_six"] = call("state")
+            call("gridKey", "z")
+            result["after_six_undo"] = call("state")
+            result["after_F_unmaximize"] = call("windowAction", "ut-F", "unmaximize")
+
+            open_window("ut-G")
+            open_window("ut-H")
+            result["before_H_fullscreen"] = call("state")
+            call("windowAction", "ut-H", "fullscreen")
+            result["before_eight_fullscreen"] = call("state")
+            call("gridKey", "8")
+            result["after_eight_fullscreen"] = call("state")
+            call("gridKey", "z")
+            result["after_fullscreen_undo"] = call("state")
+            result["after_H_unfullscreen"] = call("windowAction", "ut-H", "unfullscreen")
+            call("gridKey", "8")
+            result["after_eight"] = call("state")
+
+            open_window("ut-I")
+            call("windowAction", "ut-I", "minimize")
+            open_window("ut-J")
+            call("windowAction", "ut-J", "other-workspace")
+            call("focus", "ut-H")
+            result["before_exclusions"] = call("state")
+            call("gridKey", "8")
+            result["after_exclusions"] = call("state")
+            result["picker_eight"] = call("gridKey", "Space")
+            result["screenshot_eight"] = call("pickerScreenshot", str(root / "picker-eight.png"))
+            result["picker_six"] = call("pickerLayout", 6)
+            result["screenshot_six"] = call("pickerScreenshot", str(root / "picker-six.png"))
+            call("gridKey", "Escape", False)
+            result["after_cancel"] = call("state")
+            call("gridKey", "Space")
+            call("gridKey", "3", False)
+            result["after_place"] = call("state")
+            result["after_place_status"] = call("gridStatus")
+            call("gridKey", "z")
+            result["after_place_undo"] = call("state")
+
+            # Disable while the modal is open: it must release input immediately.
+            call("gridKey", "Space")
             ev(f"Main.extensionManager.disableExtension('{UUID}')")
             time.sleep(0.5)
             result["columns_after_disable"] = ev(f"Main.extensionManager.lookup('{UUID}').state")
-            open_window("ut-F")
+            result["after_disable_status"] = call("gridStatus")
+            open_window("ut-K")
             call("superArrow", "right")
-            result["after_disable_F_super_right"] = call("state")
+            result["after_disable_K_super_right"] = call("state")
+            # Stock TA can open its own popup for free space after K is tiled.
+            call("dismissModal")
+            call("gridKey", "6")
+            result["after_disabled_shortcut"] = call("state")
+            ev(f"Main.extensionManager.enableExtension('{UUID}')")
+            time.sleep(0.5)
+            result["reenabled_picker"] = call("gridKey", "Space")
+            call("gridKey", "Escape", False)
+            result["after_reenable_cancel"] = call("gridStatus")
+
+            call("cornerSetup")
+            for title in ["ut-L", "ut-M", "ut-N", "ut-O"]:
+                open_window(title)
+            call("focus", "ut-A")
+            call("focus", "ut-B")
+            result["before_overflow"] = call("state")
+            call("gridKey", "6")
+            result["after_overflow"] = call("state")
+            result["overflow_groups"] = call("tileGroups", ["ut-A", "ut-B", "ut-C", "ut-D", "ut-L", "ut-M", "ut-N", "ut-O"])
+            call("gridKey", "z")
+            result["after_overflow_undo"] = call("state")
+
+            result["before_tiled_native_max"] = call("state")
+            call("windowAction", "ut-B", "maximize")
+            call("gridKey", "6")
+            call("gridKey", "z")
+            result["after_tiled_native_max_restore"] = call("windowAction", "ut-B", "unmaximize")
+            call("windowAction", "ut-B", "fullscreen")
+            call("gridKey", "6")
+            call("gridKey", "z")
+            result["after_tiled_native_full_restore"] = call("windowAction", "ut-B", "unfullscreen")
+
+            result["before_gapped_max"] = call("gappedMaximize", "ut-B")
+            call("gridKey", "6")
+            call("gridKey", "z")
+            result["after_gapped_max_undo"] = call("state")
+            result["gapped_max_workspace_change"] = call("windowAction", "ut-B", "other-workspace")
+            call("gapReset")
+            call("windowAction", "ut-A", "maximize")
+            result["cancel_during_native_preparation"] = call("cancelDuringNativePreparation", "ut-A")
     except Exception as exc:  # reported, then the outer run fails
         result["error"] = repr(exc)
     finally:
@@ -272,6 +361,29 @@ def columns_problems(wa, rects, label):
     if not near(edge, wa["x"] + wa["width"]):
         problems.append(f"{label}: columns end at {edge}, work area ends at {wa['x'] + wa['width']}")
     return problems
+
+
+def grid_problems(wa, snapshot, count, label):
+    """Every selected real frame occupies a unique grid cell within two pixels."""
+    rects = frames(snapshot, *(f"ut-{chr(65 + i)}" for i in range(count)))
+    if any(rect is None for rect in rects):
+        return [f"{label}: missing grid window"]
+    columns = count // 2
+    cells = []
+    for row in range(2):
+        for col in range(columns):
+            x = wa["x"] + col * wa["width"] // columns
+            y = wa["y"] + row * wa["height"] // 2
+            cells.append(dict(x=x, y=y,
+                              width=wa["x"] + (col + 1) * wa["width"] // columns - x,
+                              height=wa["y"] + (row + 1) * wa["height"] // 2 - y))
+    remaining = cells.copy()
+    for rect in rects:
+        match = next((cell for cell in remaining if all(near(rect[k], cell[k]) for k in rect)), None)
+        if match is None:
+            return [f"{label}: frame {rect} does not occupy an unused grid cell; remaining={remaining}"]
+        remaining.remove(match)
+    return []
 
 
 def check(runs):
@@ -326,9 +438,67 @@ def check(runs):
     # Disabling restores stock behavior.
     if cols["columns_after_disable"] == ACTIVE:
         failures.append("[columns] extension still ACTIVE after disableExtension")
-    (f,) = frames(cols["after_disable_F_super_right"], "ut-F")
+    (f,) = frames(cols["after_disable_K_super_right"], "ut-K")
     if not same(f, right_half):
-        failures.append(f"[columns] after disable, F Super+Right want right half, got {f}")
+        failures.append(f"[columns] after disable, K Super+Right want right half, got {f}")
+
+    failures += grid_problems(wa, cols["after_six"], 6, "six-window shortcut")
+    failures += grid_problems(wa, cols["after_eight_fullscreen"], 8, "eight-window shortcut from fullscreen")
+    failures += grid_problems(wa, cols["after_eight"], 8, "eight-window shortcut")
+    failures += grid_problems(wa, cols["after_exclusions"], 8, "minimized and other-workspace exclusions")
+    for before, after, label in [
+        ("before_six", "after_six_undo", "six-window undo"),
+        ("before_F_maximize", "after_F_unmaximize", "native unmaximize after undo"),
+        ("before_eight_fullscreen", "after_fullscreen_undo", "fullscreen undo"),
+        ("before_H_fullscreen", "after_H_unfullscreen", "native leave fullscreen after undo"),
+        ("after_exclusions", "after_cancel", "picker cancel"),
+        ("after_exclusions", "after_place_undo", "single placement undo"),
+        ("after_disable_K_super_right", "after_disabled_shortcut", "removed shortcut"),
+        ("before_overflow", "after_overflow_undo", "overflow arrangement undo"),
+        ("before_tiled_native_max", "after_tiled_native_max_restore", "tiled native maximize restore"),
+        ("before_tiled_native_max", "after_tiled_native_full_restore", "tiled native fullscreen restore"),
+        ("before_gapped_max", "after_gapped_max_undo", "maximized-with-gaps undo"),
+    ]:
+        if cols[before] != cols[after]:
+            failures.append(f"{label}: state was not restored: before={cols[before]} after={cols[after]}")
+    for title in ["ut-I", "ut-J"]:
+        before = next(w for w in cols["before_exclusions"] if w["title"] == title)
+        after = next(w for w in cols["after_exclusions"] if w["title"] == title)
+        if before != after:
+            failures.append(f"excluded window {title} changed: {before} -> {after}")
+    for key, count in [("picker_eight", 8), ("picker_six", 6)]:
+        status = cols[key]
+        dialog = status["dialog"]
+        if not (status["panel"] and status["modalCount"] == 1 and dialog and
+                dialog["count"] == count and dialog["cells"] == [str(i + 1) for i in range(count)] and dialog["title"] == "ut-H"):
+            failures.append(f"{key}: incorrect visible picker state {status}")
+    h = next(w for w in cols["after_place"] if w["title"] == "ut-H")
+    target = dict(x=wa["x"] + 2 * wa["width"] // 3, y=wa["y"],
+                  width=wa["width"] - 2 * wa["width"] // 3, height=wa["height"] // 2)
+    if not same(h["frame"], target) or cols["after_place_status"]["modalCount"]:
+        failures.append(f"number-key placement failed: {h}; status={cols['after_place_status']}")
+    status = cols["after_disable_status"]
+    if status["controls"] or status["panel"] or status["modalCount"]:
+        failures.append(f"disable left controls or an input grab: {status}")
+    if not cols["reenabled_picker"]["dialog"] or cols["after_reenable_cancel"]["modalCount"]:
+        failures.append("re-enable did not restore a working, dismissible picker")
+    selected = ["ut-A", "ut-B", "ut-L", "ut-M", "ut-N", "ut-O"]
+    for title in selected:
+        if cols["overflow_groups"][title] != selected:
+            failures.append(f"overflow group {title}: {cols['overflow_groups'][title]}, want {selected}")
+    for title in ["ut-C", "ut-D"]:
+        if set(cols["overflow_groups"][title]) & set(selected):
+            failures.append(f"overflow retained stale group reference: {title} -> {cols['overflow_groups'][title]}")
+        before = next(w for w in cols["before_overflow"] if w["title"] == title)
+        after = next(w for w in cols["after_overflow"] if w["title"] == title)
+        if before != after:
+            failures.append(f"overflow changed excluded window {title}")
+    b = next(w for w in cols["gapped_max_workspace_change"] if w["title"] == "ut-B")
+    if b["tiled"] is not None:
+        failures.append(f"gapped-max workspace hook was lost: {b}")
+    cancel = cols["cancel_during_native_preparation"]
+    if cancel["result"].get("reason") != "disabled" or cancel["waiters"] or cancel["before"] != cancel["after"] or cancel["status"]["modalCount"] or cancel["status"]["panel"]:
+        failures.append(f"disable during native preparation leaked work: {cancel}")
     return failures
 
 

@@ -2,6 +2,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {installHooks} from './hooks.js';
+import {GridControls} from './gridControls.js';
 
 const TILING_ASSISTANT_UUIDS = [
     'tiling-assistant@ubuntu.com',
@@ -33,7 +34,16 @@ export default class TilingColumnsExtension extends Extension {
         const session = {};
         this._session = session;
         this._install(tilingAssistant.dir.get_uri(), session)
-            .catch(error => console.error(`${this.uuid}: ${error.message}`));
+            .catch(error => {
+                if (this._session !== session)
+                    return;
+                this._gridControls?.destroy();
+                this._gridControls = null;
+                this._restore?.();
+                this._restore = null;
+                console.error(`${this.uuid}: ${error.message}`);
+                Main.notify('Window layouts could not start', error.message);
+            });
     }
 
     async _install(base, session) {
@@ -45,18 +55,25 @@ export default class TilingColumnsExtension extends Extension {
         if (this._session !== session)
             return;
 
+        const Twm = twmModule.TilingWindowManager;
+        // Explicit grid placement bypasses our column-insertion wrapper while
+        // retaining Tiling Assistant's own groups, gaps and shared resizing.
+        const originalTile = Twm.tile.bind(Twm);
         this._restore = installHooks({
-            Twm: twmModule.TilingWindowManager,
+            Twm,
             Rect: utilityModule.Rect,
             Util: utilityModule.Util,
             Settings: commonModule.Settings,
             Shortcuts: commonModule.Shortcuts,
             getFocusWindow: () => global.display.focus_window,
         });
+        this._gridControls = new GridControls(this, {Twm, Rect: utilityModule.Rect, Settings: commonModule.Settings, originalTile});
     }
 
     disable() {
         this._session = null;
+        this._gridControls?.destroy();
+        this._gridControls = null;
         this._restore?.();
         this._restore = null;
     }

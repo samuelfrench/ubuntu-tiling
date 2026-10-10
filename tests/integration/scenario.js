@@ -1,7 +1,9 @@
 // Runs inside the headless test shell; imported through org.gnome.Shell.Eval
 // by run.py. Drives real input through Clutter virtual devices.
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
@@ -57,6 +59,8 @@ export async function ready() {
         await sleep(100);
     for (let i = 0; i < 100 && ext(COLUMNS) && !SETTLED.includes(ext(COLUMNS).state); i++)
         await sleep(100);
+    for (let i = 0; i < 100 && ext(COLUMNS)?.state === 1 && !ext(COLUMNS)?.stateObj?._gridControls; i++)
+        await sleep(100);
     Main.overview.hide();
     for (let i = 0; i < 100 && Main.actionMode !== Shell.ActionMode.NORMAL; i++)
         await sleep(100);
@@ -66,6 +70,7 @@ export async function ready() {
         workArea: plain(workArea()),
         tilingAssistant: ext(TILING_ASSISTANT)?.state ?? null,
         columns: ext(COLUMNS)?.state ?? null,
+        gridControls: Boolean(ext(COLUMNS)?.stateObj?._gridControls),
         errors: {
             tilingAssistant: `${ext(TILING_ASSISTANT)?.error ?? ''}`,
             columns: `${ext(COLUMNS)?.error ?? ''}`,
@@ -144,6 +149,145 @@ export async function dismissModal() {
     return open;
 }
 
+/** Real keyboard input for the public grid controls, local to this compositor. */
+export async function gridKey(value, shortcut = true) {
+    devices();
+    const symbol = value === 'Space' ? Clutter.KEY_space :
+        value === 'Escape' ? Clutter.KEY_Escape : Clutter[`KEY_${value}`];
+    if (symbol === undefined)
+        throw new Error(`Unknown key ${value}`);
+    if (shortcut) {
+        key(Clutter.KEY_Super_L, Clutter.KeyState.PRESSED);
+        key(Clutter.KEY_Alt_L, Clutter.KeyState.PRESSED);
+        await sleep(50);
+    }
+    key(symbol, Clutter.KeyState.PRESSED);
+    await sleep(50);
+    key(symbol, Clutter.KeyState.RELEASED);
+    if (shortcut) {
+        key(Clutter.KEY_Alt_L, Clutter.KeyState.RELEASED);
+        key(Clutter.KEY_Super_L, Clutter.KeyState.RELEASED);
+    }
+    await sleep(700);
+    return gridStatus();
+}
+
+export function gridStatus() {
+    const controls = Main.extensionManager.lookup(COLUMNS)?.stateObj?._gridControls;
+    const dialog = controls?._dialog;
+    return {
+        controls: Boolean(controls), busy: controls?.controller.busy ?? false,
+        canUndo: controls?.controller.canUndo ?? false,
+        panel: Boolean(Main.panel.statusArea['tiling-columns-grid']),
+        modalCount: Main.modalCount,
+        dialog: dialog ? {
+            count: dialog._count,
+            cells: dialog._grid.get_children().flatMap(row => row.get_children().map(cell => cell.label)),
+            title: dialog._windowLabel.text,
+        } : null,
+    };
+}
+
+export async function windowAction(title, action) {
+    const window = windowByTitle(title);
+    if (action === 'maximize') window.maximize(Meta.MaximizeFlags.BOTH);
+    else if (action === 'unmaximize') window.unmaximize(Meta.MaximizeFlags.BOTH);
+    else if (action === 'fullscreen') window.make_fullscreen();
+    else if (action === 'unfullscreen') window.unmake_fullscreen();
+    else if (action === 'minimize') window.minimize();
+    else if (action === 'close') window.delete(global.get_current_time());
+    else if (action === 'other-workspace') {
+        if (global.workspace_manager.n_workspaces < 2)
+            global.workspace_manager.append_new_workspace(false, global.get_current_time());
+        window.change_workspace_by_index(1, false);
+    } else throw new Error(`Unknown window action ${action}`);
+    await sleep(500);
+    return state();
+}
+
+export async function pickerScreenshot(path) {
+    const dialog = Main.extensionManager.lookup(COLUMNS)?.stateObj?._gridControls?._dialog;
+    if (!dialog)
+        throw new Error('Picker is not open');
+    const actor = dialog.dialogLayout;
+    const [x, y] = actor.get_transformed_position();
+    const [width, height] = actor.get_transformed_size();
+    const stream = Gio.File.new_for_path(path).replace(null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+    await new Shell.Screenshot().screenshot_area(Math.floor(x), Math.floor(y), Math.ceil(width), Math.ceil(height), stream);
+    stream.close(null);
+    return {path, x, y, width, height};
+}
+
+export async function pickerLayout(count) {
+    const dialog = Main.extensionManager.lookup(COLUMNS)?.stateObj?._gridControls?._dialog;
+    dialog._selectors.get(count).emit('clicked', 1);
+    await sleep(150);
+    return gridStatus();
+}
+
+async function tilingModules() {
+    const base = Main.extensionManager.lookup(TILING_ASSISTANT).dir.get_uri();
+    const [manager, utility, common] = await Promise.all([
+        import(`${base}/src/extension/tilingWindowManager.js`),
+        import(`${base}/src/extension/utility.js`),
+        import(`${base}/src/common.js`),
+    ]);
+    return {Twm: manager.TilingWindowManager, Rect: utility.Rect, Settings: common.Settings};
+}
+
+export async function cornerSetup() {
+    const {Twm, Rect} = await tilingModules();
+    for (const window of global.display.list_all_windows()) {
+        if (/^ut-[E-I]|^ut-K$/.test(window.get_title() || ''))
+            window.minimize();
+    }
+    const area = workArea();
+    for (let index = 0; index < 4; index++) {
+        await Twm.tile(windowByTitle(`ut-${String.fromCharCode(65 + index)}`), new Rect({
+            x: area.x + index % 2 * area.width / 2,
+            y: area.y + Math.floor(index / 2) * area.height / 2,
+            width: area.width / 2, height: area.height / 2,
+        }), {openTilingPopup: false});
+    }
+    await sleep(300);
+    return state();
+}
+
+export async function tileGroups(titles) {
+    const {Twm} = await tilingModules();
+    return Object.fromEntries(titles.map(title => [title,
+        Twm.getTileGroupFor(windowByTitle(title)).map(window => window.get_title()).sort(),
+    ]));
+}
+
+export async function gappedMaximize(title) {
+    const {Twm, Rect, Settings} = await tilingModules();
+    const settings = Settings.getGioObject();
+    settings.set_boolean('maximize-with-gap', true);
+    settings.set_int('single-screen-gap', 12);
+    await Twm.tile(windowByTitle(title), new Rect(workArea()), {openTilingPopup: false});
+    await sleep(250);
+    return state();
+}
+
+export async function gapReset() {
+    const {Settings} = await tilingModules();
+    Settings.getGioObject().set_boolean('maximize-with-gap', false);
+    Settings.getGioObject().set_int('single-screen-gap', 0);
+}
+
+export async function cancelDuringNativePreparation(title) {
+    await focus(title);
+    const controls = Main.extensionManager.lookup(COLUMNS).stateObj._gridControls;
+    const operation = controls.controller.place(6, 0);
+    Main.extensionManager.disableExtension(COLUMNS);
+    const result = await operation;
+    await sleep(250);
+    const before = state();
+    await sleep(250);
+    return {result, waiters: controls._waiters.size, status: gridStatus(), before, after: state()};
+}
+
 export function state() {
     return global.display.list_all_windows()
         .filter(w => w.get_title()?.startsWith('ut-'))
@@ -151,6 +295,8 @@ export function state() {
             title: w.get_title(),
             frame: plain(w.get_frame_rect()),
             tiled: w.tiledRect ? plain(w.tiledRect) : null,
+            maximized: w.get_maximized(), fullscreen: w.is_fullscreen(),
+            minimized: w.minimized, workspace: w.get_workspace()?.index() ?? -1,
         }))
         .sort((a, b) => a.title.localeCompare(b.title));
 }
