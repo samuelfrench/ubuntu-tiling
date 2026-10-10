@@ -6,4 +6,4 @@ GNOME Shell extension `tiling-columns@samuelfrench.github.io` that extends Ubunt
 - Install: `./install.sh` (then restart GNOME Shell: X11 Alt+F2 `r`; Wayland re-login). Remove: `./install.sh uninstall`.
 - Tests: `node --test tests/*.test.mjs` (unit) and `tests/integration/run.py` (isolated headless GNOME Shell; local only).
 - Never disable `tiling-assistant@ubuntu.com`; this extension depends on it.
-- Live TODO: `TODO.md`
+- Live TODO: generated `TODO.md`; edit `docs/todo/<area>/<slug>.md`, then run `node scripts/todo/build.mjs`. Commit the task file, `TODO.md` and `docs/todo/index.json` together. Never hand-edit generated output. Rules and queries: `docs/todo/README.md`; validation: `node --test scripts/todo/__tests__/*.test.mjs` and `node scripts/todo/build.mjs --check`.

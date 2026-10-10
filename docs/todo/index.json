@@ -1,0 +1,116 @@
+[
+  {
+    "path": "docs/todo/ci/headless-integration-ci.md",
+    "slug": "headless-integration-ci",
+    "title": "Evaluate isolated GNOME integration in CI",
+    "status": "idea",
+    "area": "ci",
+    "due": null,
+    "updated": "2026-10-09",
+    "owner": "agent",
+    "brief": "Retained untested CI proposal; unit and TODO guards remain the actual CI gate",
+    "refs": [
+      "TODO-archive.md:43",
+      "TODO-archive.md:55",
+      "TODO-archive.md:66"
+    ],
+    "test": null
+  },
+  {
+    "path": "docs/todo/done/process/generated-todo-migration.md",
+    "slug": "generated-todo-migration",
+    "title": "Generate TODO from per-task files",
+    "status": "done",
+    "area": "process",
+    "due": null,
+    "updated": "2026-10-09",
+    "owner": "agent",
+    "brief": "Reviewed: 27 tests pass; 91 source lines preserved byte-for-byte; generated TODO guards active",
+    "refs": [
+      "docs/todo/README.md",
+      "docs/todo/migration-2026-10-09.md",
+      ".github/workflows/test.yml"
+    ],
+    "test": null
+  },
+  {
+    "path": "docs/todo/done/process/historical-column-proof-and-rejected-routes.md",
+    "slug": "historical-column-proof-and-rejected-routes",
+    "title": "Retain September proof and rejected routes",
+    "status": "done",
+    "area": "process",
+    "due": null,
+    "updated": "2026-10-09",
+    "owner": "agent",
+    "brief": "Original 91-line TODO archived byte-for-byte; September proof is historical and stale live-load claim superseded",
+    "refs": [
+      "TODO-archive.md",
+      "docs/todo/migration-2026-10-09.md"
+    ],
+    "test": null
+  },
+  {
+    "path": "docs/todo/product/dragged-window-identity.md",
+    "slug": "dragged-window-identity",
+    "title": "Verify dragged-window identity before changing it",
+    "status": "idea",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-09",
+    "owner": "agent",
+    "brief": "Historical possible preview/drop mismatch is unobserved; preserve the exact reproduction lead",
+    "refs": [
+      "TODO-archive.md:81",
+      "extension/hooks.js",
+      "tests/integration/run.py"
+    ],
+    "test": null
+  },
+  {
+    "path": "docs/todo/product/reexpand-columns.md",
+    "slug": "reexpand-columns",
+    "title": "Re-expand columns after a window leaves",
+    "status": "idea",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-09",
+    "owner": "agent",
+    "brief": "Retained follow-up: stock leaves free space after close or untile; no current implementation",
+    "refs": [
+      "TODO-archive.md:64"
+    ],
+    "test": null
+  },
+  {
+    "path": "docs/todo/product/six-eight-window-grids.md",
+    "slug": "six-eight-window-grids",
+    "title": "Easy six- and eight-window layouts",
+    "status": "now",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-09",
+    "owner": "agent",
+    "brief": "Implement native 3x2 and 4x2 picker, shortcuts, safe arrange and undo; isolated tests authorized 2026-10-09; runtime implementation pending",
+    "refs": [
+      "extension/",
+      "tests/integration/run.py",
+      "TODO-archive.md"
+    ],
+    "test": null
+  },
+  {
+    "path": "docs/todo/product/upstream-column-insertion.md",
+    "slug": "upstream-column-insertion",
+    "title": "Consider upstream column insertion",
+    "status": "idea",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-09",
+    "owner": "agent",
+    "brief": "Check existing Leleat/Tiling-Assistant issues after live use; external PR needs Sam approval",
+    "refs": [
+      "TODO-archive.md:67"
+    ],
+    "test": null
+  }
+]
