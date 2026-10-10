@@ -67,6 +67,22 @@
     "test": null
   },
   {
+    "path": "docs/todo/product/native-unchanged-frame.md",
+    "slug": "native-unchanged-frame",
+    "title": "Investigate native restore with identical bounds if encountered",
+    "status": "idea",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-09",
+    "owner": "agent",
+    "brief": "Unobserved narrow native-restore case; retain conservative 500 ms frame guard and manual-restore workaround",
+    "refs": [
+      "extension/gridControls.js",
+      "tests/integration/scenario.js"
+    ],
+    "test": null
+  },
+  {
     "path": "docs/todo/product/reexpand-columns.md",
     "slug": "reexpand-columns",
     "title": "Re-expand columns after a window leaves",
@@ -90,7 +106,7 @@
     "due": null,
     "updated": "2026-10-09",
     "owner": "agent",
-    "brief": "Native 3x2/4x2 picker, safe arrange and undo implemented; 77 unit tests pass; isolated integration, review and installation pending",
+    "brief": "Native six/eight grids, Undo, gaps, overflow groups and panel button pass; packaging passes; committing and installing tested v2",
     "refs": [
       "extension/",
       "tests/integration/run.py",

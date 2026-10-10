@@ -294,7 +294,7 @@ def inner(mode: str, root: Path) -> None:
             result["after_disabled_shortcut"] = call("state")
             ev(f"Main.extensionManager.enableExtension('{UUID}')")
             time.sleep(0.5)
-            result["reenabled_picker"] = call("gridKey", "Space")
+            result["reenabled_picker"] = call("panelClick")
             call("gridKey", "Escape", False)
             result["after_reenable_cancel"] = call("gridStatus")
 
@@ -324,6 +324,7 @@ def inner(mode: str, root: Path) -> None:
             call("gridKey", "6")
             call("gridKey", "z")
             result["after_gapped_max_undo"] = call("state")
+            result["gapped_max_signals"] = call("tilingSignalState", "ut-B")
             result["gapped_max_workspace_change"] = call("windowAction", "ut-B", "other-workspace")
             call("gapReset")
             call("windowAction", "ut-A", "maximize")
@@ -494,8 +495,10 @@ def check(runs):
         if before != after:
             failures.append(f"overflow changed excluded window {title}")
     b = next(w for w in cols["gapped_max_workspace_change"] if w["title"] == "ut-B")
-    if b["tiled"] is not None:
-        failures.append(f"gapped-max workspace hook was lost: {b}")
+    if b["tiled"] != wa or b["workspace"] != 1:
+        failures.append(f"gapped-max did not retain its workarea on workspace change: {b}")
+    if cols["gapped_max_signals"] != {"WS_CHANGED": True, "UNMANAGING": True}:
+        failures.append(f"gapped-max hooks were not restored: {cols['gapped_max_signals']}")
     cancel = cols["cancel_during_native_preparation"]
     if cancel["result"].get("reason") != "disabled" or cancel["waiters"] or cancel["before"] != cancel["after"] or cancel["status"]["modalCount"] or cancel["status"]["panel"]:
         failures.append(f"disable during native preparation leaked work: {cancel}")

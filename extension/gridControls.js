@@ -214,7 +214,7 @@ export class GridControls {
                     if (cancelled() || !alive(window))
                         return;
                     if (!restored)
-                        throw new Error('A window did not finish leaving maximize or fullscreen. Try again when it is responsive.');
+                        throw new Error('A window did not finish leaving maximize or fullscreen. Restore maximized or fullscreen windows, then try again.');
                     state.restoreFrame = copyRect(window.get_frame_rect());
                 }
                 if (!cancelled())
@@ -247,13 +247,15 @@ export class GridControls {
                     await originalTile(window, new Rect(state.tiledRect), {
                         openTilingPopup: false, monitorNr: state.monitor, skipAnim: true,
                     });
-                } else {
-                    const {x, y, width, height} = frame;
-                    window.move_frame(true, x, y);
-                    window.move_resize_frame(true, x, y, width, height);
                 }
                 if (cancelled() || !alive(window))
                     return;
+                // The saved frame is authoritative: existing tiles may still
+                // have their old gaps after the user changes TA preferences.
+                // Restore their actual bounds after rebuilding TA's hooks.
+                const {x, y, width, height} = frame;
+                window.move_frame(true, x, y);
+                window.move_resize_frame(true, x, y, width, height);
                 if (state.maximized || state.fullscreen) {
                     // Native maximize saves the current committed frame. Doing
                     // this immediately would save the old grid-cell rectangle.

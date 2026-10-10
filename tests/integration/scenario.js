@@ -3,6 +3,7 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -188,6 +189,20 @@ export function gridStatus() {
     };
 }
 
+export async function panelClick() {
+    devices();
+    const panel = Main.panel.statusArea['tiling-columns-grid'];
+    const [x, y] = panel.get_transformed_position();
+    const [width, height] = panel.get_transformed_size();
+    pointer.notify_absolute_motion(now(), Math.round(x + width / 2), Math.round(y + height / 2));
+    await sleep(100);
+    pointer.notify_button(now(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.PRESSED);
+    await sleep(50);
+    pointer.notify_button(now(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.RELEASED);
+    await sleep(300);
+    return gridStatus();
+}
+
 export async function windowAction(title, action) {
     const window = windowByTitle(title);
     if (action === 'maximize') window.maximize(Meta.MaximizeFlags.BOTH);
@@ -236,7 +251,10 @@ async function tilingModules() {
 }
 
 export async function cornerSetup() {
-    const {Twm, Rect} = await tilingModules();
+    const {Twm, Rect, Settings} = await tilingModules();
+    // Make A/B recent independently of C/D. Stock group raising otherwise
+    // marks the entire old group recent, which correctly changes the MRU cap.
+    Settings.getGioObject().set_boolean('enable-raise-tile-group', false);
     for (const window of global.display.list_all_windows()) {
         if (/^ut-[E-I]|^ut-K$/.test(window.get_title() || ''))
             window.minimize();
@@ -268,6 +286,16 @@ export async function gappedMaximize(title) {
     await Twm.tile(windowByTitle(title), new Rect(workArea()), {openTilingPopup: false});
     await sleep(250);
     return state();
+}
+
+export async function tilingSignalState(title) {
+    const {Twm} = await tilingModules();
+    const window = windowByTitle(title);
+    const signals = Twm._signals.getSignalsFor(window.get_id());
+    return Object.fromEntries(['WS_CHANGED', 'UNMANAGING'].map(name => {
+        const id = signals.get(name);
+        return [name, Boolean(id && GObject.signal_handler_is_connected(window, id))];
+    }));
 }
 
 export async function gapReset() {

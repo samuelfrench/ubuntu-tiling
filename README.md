@@ -2,7 +2,7 @@
 
 Six or eight windows on one screen, with a native GNOME picker, keyboard shortcuts and undo. Extends Ubuntu's built-in **Tiling Assistant** and keeps the existing column-insertion controls.
 
-**Development status (2026-10-09):** six/eight-grid controls are implemented and 77 unit tests pass. Native grid integration, final review and installation verification are pending; see generated [TODO.md](TODO.md). The earlier isolated three/four/five-column proof does not verify the new grids.
+**Verified (2026-10-09):** 77 unit tests, 27 task-tool checks, isolated installation checks and the native GNOME 46 desktop suite pass. The desktop suite covers six/eight layouts, both picker modes, the panel button, keyboard placement, Undo, gaps, overflow groups and extension cleanup. See [verification](docs/verification/2026-10-09/README.md) and generated [TODO.md](TODO.md). Installing an update requires one Shell reload.
 
 ## Use
 
@@ -54,6 +54,7 @@ Remove with `./install.sh uninstall`.
 node --test tests/*.test.mjs
 node --test scripts/todo/__tests__/*.test.mjs
 node scripts/todo/build.mjs --check
+python3 tests/integration/install.py
 tests/integration/run.py
 ```
 
