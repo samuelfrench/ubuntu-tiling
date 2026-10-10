@@ -6,11 +6,11 @@
 
 ## Now
 
-- [ ] Easy six- and eight-window layouts — Native six/eight grids, Undo, gaps, overflow groups and panel button pass; packaging passes; committing and installing tested v2 · _product_ · [details](docs/todo/product/six-eight-window-grids.md)
+_None._
 
 ## Waiting on Sam
 
-_None._
+- [ ] Easy six- and eight-window layouts — Version 2 installed and verified; native tests and CI pass; Sam reloads GNOME once to activate the new controls · _product_ · [details](docs/todo/product/six-eight-window-grids.md)
 
 ## Scheduled (by due date)
 

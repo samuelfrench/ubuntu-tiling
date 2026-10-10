@@ -1,0 +1,30 @@
+{
+  "installed_at_utc": "20261010T004930Z",
+  "source_commit": "d5ef510aa004f95ed3f49b1933b4b034559445bf",
+  "installed_version": 2,
+  "backup": "/home/sam/.local/share/ubuntu-tiling-backups/20261010T004930Z",
+  "verified_source_files": {
+    "columns.js": "5d80abea95dcfd6e23479bd4e038ffb66d7227927ff6943aaf52bee82856acad",
+    "extension.js": "94c96185ada11960cf4b38dd6cd8c15d1069057520a8b49ec600b4eff5e90cfc",
+    "gridController.js": "8f4d16055e4cb6a4c24c4e570cb0b3eb525f0a291be3c1f8601d89b5715094a4",
+    "gridControls.js": "e50c7aef25ea2427b160a69ee242ab5dc35321ab18bb52f5e23b911385d0c419",
+    "grids.js": "88cda33624850dcf064a03e613bbd56a2007eedc0f363261f7ae9c16e26a151d",
+    "hooks.js": "a33d6770460abd09bf1d234abbfcc49d7b9150aa41bf89363c663bd0d5c293e0",
+    "metadata.json": "902c26876cb98a354023d31d1305bc2bc03f97bbaaad49cdb9345232d824ecfc",
+    "schemas/org.gnome.shell.extensions.tiling-columns.gschema.xml": "f1e09796d8466bd3d5188e818233e7b3ff3398108b2b699a77f0e0f8868ecf48",
+    "stylesheet.css": "af1923c53df4ff752cf578e0e1b610f73a4ce6f503e02e2673fb98eefbe03ba0"
+  },
+  "compiled_schema_sha256": "712476f1c7aacaa0aa98238eaf5cfe7116b0faa6a692d82016e6724dbe6e026c",
+  "keybindings": {
+    "show-grid-picker": "['<Super><Alt>space']",
+    "arrange-six-windows": "['<Super><Alt>6']",
+    "arrange-eight-windows": "['<Super><Alt>8']",
+    "undo-grid-layout": "['<Super><Alt>z']"
+  },
+  "unrelated_extension_settings_preserved": true,
+  "live_extension_version": 1,
+  "live_extension_active": true,
+  "stock_tiling_assistant_active": true,
+  "shell_processes": "PID                  STARTED COMMAND\n  12141 Fri Oct  9 13:18:05 2026 /usr/bin/gnome-shell",
+  "activation": "Pending user X11 Shell reload: Alt+F2, r, Enter. Live extension still version 1."
+}

@@ -101,16 +101,17 @@
     "path": "docs/todo/product/six-eight-window-grids.md",
     "slug": "six-eight-window-grids",
     "title": "Easy six- and eight-window layouts",
-    "status": "now",
+    "status": "waiting-sam",
     "area": "product",
     "due": null,
     "updated": "2026-10-09",
-    "owner": "agent",
-    "brief": "Native six/eight grids, Undo, gaps, overflow groups and panel button pass; packaging passes; committing and installing tested v2",
+    "owner": "sam",
+    "brief": "Version 2 installed and verified; native tests and CI pass; Sam reloads GNOME once to activate the new controls",
     "refs": [
       "extension/",
-      "tests/integration/run.py",
-      "TODO-archive.md"
+      "docs/verification/2026-10-09/README.md",
+      "docs/verification/2026-10-09/installed.json",
+      "tests/integration/run.py"
     ],
     "test": null
   },
