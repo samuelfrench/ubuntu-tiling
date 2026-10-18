@@ -93,7 +93,7 @@
     "due": null,
     "updated": "2026-10-18",
     "owner": "sam",
-    "brief": "Version 3 merged (b5eb408), native suite PASS, installed; Sam reloads GNOME (Alt+F2 r) and tries Super+Alt+Space / A / Shift+2",
+    "brief": "Version 3 installed; Sam declined a shell restart 2026-10-18, so it loads at his next restart or login",
     "refs": [
       "docs/superpowers/plans/2026-10-18-more-layouts-and-app-filters.md",
       "docs/verification/2026-10-18/README.md",

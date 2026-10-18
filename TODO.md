@@ -10,7 +10,7 @@ _None._
 
 ## Waiting on Sam
 
-- [ ] More layouts and program-type filters — Version 3 merged (b5eb408), native suite PASS, installed; Sam reloads GNOME (Alt+F2 r) and tries Super+Alt+Space / A / Shift+2 · _product_ · [details](docs/todo/product/more-layouts-app-filters.md)
+- [ ] More layouts and program-type filters — Version 3 installed; Sam declined a shell restart 2026-10-18, so it loads at his next restart or login · _product_ · [details](docs/todo/product/more-layouts-app-filters.md)
 
 ## Scheduled (by due date)
 
