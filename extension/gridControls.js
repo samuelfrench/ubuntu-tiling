@@ -333,6 +333,8 @@ export class GridControls {
             ['x', 'y', 'width', 'height'].every(key => context.workspace.get_work_area_for_monitor(context.monitor)[key] === context.workArea[key]);
         this.controller = new GridController({
             normalType: Meta.WindowType.NORMAL,
+            // TA natively maximizes a tile equal to the work area (All with one window).
+            maximizedBoth: Meta.MaximizeFlags.BOTH,
             getContext: () => {
                 const workspace = global.workspace_manager.get_active_workspace();
                 const focusWindow = global.display.focus_window;
@@ -444,8 +446,9 @@ export class GridControls {
                 }
             },
             finishArrange: selected => {
-                if (!Settings.getBoolean(Settings.DISABLE_TILE_GROUPS)) {
-                    const group = selected.filter(window => alive(window) && window.isTiled);
+                // A lone All window is maximized, not tiled, and joins no group.
+                const group = selected.filter(window => alive(window) && window.isTiled);
+                if (group.length && !Settings.getBoolean(Settings.DISABLE_TILE_GROUPS)) {
                     // Remove reciprocal references in retained overflow groups
                     // before assigning the chosen windows to one fresh group.
                     for (const window of group)

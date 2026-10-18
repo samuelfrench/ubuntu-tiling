@@ -203,6 +203,24 @@ describe('window selection', () => {
         const dropped = planGrid(6, {...context, windows: many, focusWindow: many[7]}, 0, w => w !== many[7]);
         assert.ok(!dropped.moves.some(move => move.window === many[7]));
     });
+    test('focusWindow is the focused window when chosen, else the most recent chosen window', () => {
+        // MRU order is the input order; the spatial sort puts windows[1] first.
+        const at = x => window({get_frame_rect: () => ({x, y: 40, width: 500, height: 400})});
+        const windows = [at(3000), at(100), at(1500), at(2200)];
+        const focused = planGrid(FIT, {...context, windows, focusWindow: windows[2]});
+        assert.equal(focused.focusWindow, windows[2]);
+        assert.equal(focused.moves[0].window, windows[1]);
+        // The focused window is filtered out: the most recent match, not the leftmost.
+        const matching = new Set([windows[0], windows[1], windows[2]]);
+        const filtered = planGrid(FIT, {...context, windows, focusWindow: windows[3]}, 0, w => matching.has(w));
+        assert.ok(!filtered.moves.some(move => move.window === windows[3]));
+        assert.equal(filtered.focusWindow, windows[0]);
+        assert.equal(filtered.moves[0].window, windows[1]);
+        // An ineligible focused window (another monitor) is never the focus target.
+        const elsewhere = window({get_monitor: () => 1});
+        assert.equal(planGrid(6, {...context, windows: [elsewhere, ...windows], focusWindow: elsewhere}).focusWindow, windows[0]);
+        assert.equal(planGrid(FIT, {...context, windows, focusWindow: windows[0]}, 0, () => false).focusWindow, null);
+    });
     test('spatial order uses three rows for a 3-row shape', () => {
         const hd = {x: 0, y: 0, width: 1920, height: 1080};
         const at = (x, y) => window({get_frame_rect: () => ({x, y, width: 400, height: 300})});

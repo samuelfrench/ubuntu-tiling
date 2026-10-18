@@ -1,4 +1,4 @@
-import {copyRect, eligibleWindows, fitsCell, gridCells, planGrid} from './grids.js';
+import {FIT, copyRect, eligibleWindows, fitsCell, gridCells, planGrid} from './grids.js';
 
 /**
  * One reversible operation at a time. GNOME effects are injected so failure,
@@ -33,7 +33,7 @@ export class GridController {
             const plan = planGrid(layout, this._current(context), this._deps.normalType, matches);
             if (!plan.moves.length)
                 throw new Error(`No ${label ? `${label} ` : 'resizable '}windows on this monitor and workspace.`);
-            return {...plan, label, arrange: true};
+            return {...plan, label, arrange: true, fit: layout === FIT};
         });
     }
 
@@ -47,7 +47,7 @@ export class GridController {
             const rect = gridCells(count, context.workArea)[cell];
             if (!Number.isInteger(cell) || !rect)
                 throw new Error('Choose a tile in this layout.');
-            return {moves: [{window, rect}], count, overflow: 0};
+            return {moves: [{window, rect}], count, overflow: 0, focusWindow: window};
         });
     }
 
@@ -82,16 +82,18 @@ export class GridController {
             for (const {window, rect} of plan.moves) {
                 if (!this._deps.isAlive(window))
                     continue;
-                if (!window.isTiled || !window.tiledRect ||
-                    !['x', 'y', 'width', 'height'].every(k => window.tiledRect[k] === rect[k]))
+                if (!this._placed(window, rect, context.workArea))
                     throw new Error('A window refused to tile. The previous layout was restored.');
-                if (!fitsCell(window.get_frame_rect(), rect))
-                    throw new Error('A window’s minimum size is too large for this layout. Try a layout with fewer tiles.');
+                if (!fitsCell(window.get_frame_rect(), rect)) {
+                    throw new Error(`A window’s minimum size is too large for this layout. ${
+                        plan.fit ? 'Pick fewer programs or a numbered layout.' : 'Try a layout with fewer tiles.'}`);
+                }
             }
             if (plan.arrange)
                 this._deps.finishArrange?.(plan.moves.map(move => move.window));
             this._undo = {context, snapshots};
-            this._deps.focus(context.focusWindow, context);
+            // A window outside the filter must not be raised over the new grid.
+            this._deps.focus(plan.focusWindow, context);
             return {ok: true, moved: plan.moves.length, overflow: plan.overflow, count: plan.count, label: plan.label};
         } catch (error) {
             if (job.cancelled)
@@ -108,6 +110,20 @@ export class GridController {
             if (this._job === job)
                 this._job = null;
         }
+    }
+
+    /**
+     * TA tiles a window to `rect`, except that a rect equal to the work area
+     * (All with one window) maximizes it: natively, with isTiled false and no
+     * tiledRect, or with gaps, keeping tiledRect at the work area. Gapped
+     * frames are inset, so fitsCell still holds for them.
+     */
+    _placed(window, rect, workArea) {
+        const tiledTo = Boolean(window.tiledRect) && ['x', 'y', 'width', 'height'].every(k => window.tiledRect[k] === rect[k]);
+        if (window.isTiled && tiledTo)
+            return true;
+        const fullArea = ['x', 'y', 'width', 'height'].every(k => rect[k] === workArea[k]);
+        return fullArea && (tiledTo || window.get_maximized() === this._deps.maximizedBoth);
     }
 
     async _restore(snapshots, cancelled = () => false) {

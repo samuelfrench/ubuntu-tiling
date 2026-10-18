@@ -81,7 +81,11 @@ export function eligibleWindows(windows, {workspace, monitor}, normalType = 0) {
     });
 }
 
-/** `layout` is a LAYOUTS count or FIT; `matches` narrows the windows considered. */
+/**
+ * `layout` is a LAYOUTS count or FIT; `matches` narrows the windows considered.
+ * `focusWindow` is the focused window when it is chosen, else the most recent
+ * chosen window, so a filtered-out window is never raised over the new grid.
+ */
 export function planGrid(layout, context, normalType = 0, matches = () => true) {
     const eligible = eligibleWindows(context.windows, context, normalType).filter(matches);
     const focusIndex = eligible.indexOf(context.focusWindow);
@@ -92,10 +96,12 @@ export function planGrid(layout, context, normalType = 0, matches = () => true) 
     if (!fit)
         validate(count, context.workArea, false);
     if (!count)
-        return {moves: [], overflow: 0, eligible: eligible.length, count: 0, rows: []};
+        return {moves: [], overflow: 0, eligible: eligible.length, count: 0, rows: [], focusWindow: null};
     const rows = gridShape(count, context.workArea, {ragged: fit});
     const cells = gridCells(count, context.workArea, {ragged: fit});
     const chosen = eligible.slice(0, count);
+    // A matching focused window is already first in MRU order.
+    const focusWindow = chosen[0] ?? null;
     // Select by recency first, then retain the visible left-to-right order
     // within each band of the monitor.
     const {y, height} = context.workArea;
@@ -113,6 +119,7 @@ export function planGrid(layout, context, normalType = 0, matches = () => true) 
         eligible: eligible.length,
         count,
         rows,
+        focusWindow,
     };
 }
 
