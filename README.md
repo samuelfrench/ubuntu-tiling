@@ -2,7 +2,7 @@
 
 4 to 16 windows on one screen, or every window of the program types you pick, with a native GNOME picker, keyboard shortcuts and undo. Extends Ubuntu's built-in **Tiling Assistant** and keeps the existing column-insertion controls.
 
-**Verified (2026-10-09, version 2):** 77 unit tests, 27 task-tool checks, isolated installation checks and the native GNOME 46 desktop suite pass. The desktop suite covers six/eight layouts, both picker modes, the panel button, keyboard placement, Undo, gaps, overflow groups and extension cleanup. See [verification](docs/verification/2026-10-09/README.md) and generated [TODO.md](TODO.md). Native GNOME verification of version 3 (more layouts, All and the program-type filter) is pending. Installing an update requires one Shell reload.
+**Verified (2026-10-18, version 3):** 133 unit tests, 10 offline harness tests, 27 task-tool checks, isolated installation checks and the native GNOME 46 desktop suite pass. The desktop suite covers layouts 4/6/8/9/10/12/16, the All layout, program-type filter chips with the saved `window-filter`, every shortcut, the picker and panel button, Undo, gaps, overflow groups and extension cleanup. See [verification](docs/verification/2026-10-18/README.md) and generated [TODO.md](TODO.md). Installing an update requires one Shell reload.
 
 ## Use
 
@@ -77,6 +77,7 @@ node --test tests/*.test.mjs
 node --test scripts/todo/__tests__/*.test.mjs
 node scripts/todo/build.mjs --check
 python3 tests/integration/install.py
+python3 tests/integration/test_run_offline.py
 tests/integration/run.py
 ```
 

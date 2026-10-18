@@ -15,6 +15,8 @@ jobs:
         run: node --test scripts/todo/__tests__/*.test.mjs
       - name: generated TODO is current
         run: node scripts/todo/build.mjs --check
+      - name: integration harness helpers (offline)
+        run: python3 tests/integration/test_run_offline.py
       - name: extension metadata is valid JSON
         run: python3 -m json.tool extension/metadata.json > /dev/null
       - name: extension settings schema
