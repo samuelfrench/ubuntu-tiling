@@ -1,11 +1,11 @@
 ---
 title: "Easy six- and eight-window layouts"
-status: waiting-sam
+status: done
 area: product
 due: null
 updated: 2026-10-18
-owner: sam
-brief: "Version 2 now ACTIVE live (verified 2026-10-18); Sam tries Super+Alt+6/8 and Z, then records the result"
+owner: agent
+brief: "Superseded by version 3 (more-layouts-app-filters); v2 grids were loaded live 2026-10-17 21:40; live trial folded into the v3 task"
 refs:
   - "extension/"
   - "docs/verification/2026-10-09/README.md"
@@ -14,6 +14,7 @@ refs:
 test: null
 ---
 
+- **Closed 2026-10-18:** superseded by `docs/todo/product/more-layouts-app-filters.md` (version 3 adds 4/9/10/12/16, All and program filters on top of these grids; native suite PASS). Sam's live trial of the grid controls is tracked there.
 - **What:** Six-window (3 columns × 2 rows) and eight-window (4 columns × 2 rows) layouts, native top-bar picker, numbered placement, shortcuts and one-step Undo, added to the existing Tiling Assistant column extension.
 - **Why:** Sam asked 2026-10-09 to go beyond four corners easily and make it "super high quality". Implemented and verified locally; live activation remains explicit below.
 - **Next — Sam:** On this X11 session, press **Alt+F2**, type **r**, Enter. Then `gnome-extensions info tiling-columns@samuelfrench.github.io` must show **Version: 2**, **State: ACTIVE**. Open **Super+Alt+Space** or the top-bar grid icon, try **Super+Alt+6 / 8**, then **Super+Alt+Z**. Record observed live behavior and move this task to done. No agent-initiated live Shell restart is authorized by the isolated-test approval.

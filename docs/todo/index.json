@@ -50,6 +50,24 @@
     "test": null
   },
   {
+    "path": "docs/todo/done/product/six-eight-window-grids.md",
+    "slug": "six-eight-window-grids",
+    "title": "Easy six- and eight-window layouts",
+    "status": "done",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-18",
+    "owner": "agent",
+    "brief": "Superseded by version 3 (more-layouts-app-filters); v2 grids were loaded live 2026-10-17 21:40; live trial folded into the v3 task",
+    "refs": [
+      "extension/",
+      "docs/verification/2026-10-09/README.md",
+      "docs/verification/2026-10-09/installed.json",
+      "tests/integration/run.py"
+    ],
+    "test": null
+  },
+  {
     "path": "docs/todo/product/dragged-window-identity.md",
     "slug": "dragged-window-identity",
     "title": "Verify dragged-window identity before changing it",
@@ -70,15 +88,17 @@
     "path": "docs/todo/product/more-layouts-app-filters.md",
     "slug": "more-layouts-app-filters",
     "title": "More layouts and program-type filters",
-    "status": "now",
+    "status": "waiting-sam",
     "area": "product",
     "due": null,
     "updated": "2026-10-18",
-    "owner": "agent",
-    "brief": "Building 4/9/10/12/16 + All layouts and a Terminals/ChatGPT/app filter on branch feature/layouts-filters",
+    "owner": "sam",
+    "brief": "Version 3 merged (b5eb408), native suite PASS, installed; Sam reloads GNOME (Alt+F2 r) and tries Super+Alt+Space / A / Shift+2",
     "refs": [
       "docs/superpowers/plans/2026-10-18-more-layouts-and-app-filters.md",
+      "docs/verification/2026-10-18/README.md",
       "extension/grids.js",
+      "extension/windowGroups.js",
       "extension/gridControls.js"
     ],
     "test": null
@@ -111,24 +131,6 @@
     "brief": "Retained follow-up: stock leaves free space after close or untile; no current implementation",
     "refs": [
       "TODO-archive.md:64"
-    ],
-    "test": null
-  },
-  {
-    "path": "docs/todo/product/six-eight-window-grids.md",
-    "slug": "six-eight-window-grids",
-    "title": "Easy six- and eight-window layouts",
-    "status": "waiting-sam",
-    "area": "product",
-    "due": null,
-    "updated": "2026-10-18",
-    "owner": "sam",
-    "brief": "Version 2 now ACTIVE live (verified 2026-10-18); Sam tries Super+Alt+6/8 and Z, then records the result",
-    "refs": [
-      "extension/",
-      "docs/verification/2026-10-09/README.md",
-      "docs/verification/2026-10-09/installed.json",
-      "tests/integration/run.py"
     ],
     "test": null
   },
