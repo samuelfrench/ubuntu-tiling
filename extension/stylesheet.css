@@ -4,7 +4,8 @@
 .tiling-grid-title { font-size: 24px; font-weight: 800; }
 .tiling-grid-subtitle { color: #c0c4cc; font-size: 12px; margin-bottom: 4px; }
 .tiling-grid-section { spacing: 6px; }
-.tiling-grid-chips { padding: 2px 0; }
+/* The dialog's content width: 600px less the content box's 32px side margins. */
+.tiling-grid-chips { padding: 2px 0; max-width: 536px; }
 .tiling-grid-chip { padding: 5px 12px; max-width: 260px; border-radius: 999px; background-color: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); font-size: 12px; font-weight: bold; }
 .tiling-grid-chip:hover { background-color: rgba(255,255,255,0.13); }
 .tiling-grid-chip:checked { background-color: #245b91; border-color: #79b5f0; color: white; }

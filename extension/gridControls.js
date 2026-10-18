@@ -12,7 +12,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import {GridController} from './gridController.js';
 import {FIT, LAYOUTS, MAX_WINDOWS, copyRect, eligibleWindows, gridShape} from './grids.js';
-import {classifyWindow, defaultLabel, describeFilter, summarizeGroups, toggleGroup, windowMatcher} from './windowGroups.js';
+import {TERMINALS, classifyWindow, defaultLabel, describeFilter, summarizeGroups, toggleGroup, windowMatcher} from './windowGroups.js';
 import {sameRect} from './columns.js';
 
 const LAYOUT_BINDINGS = [
@@ -90,9 +90,24 @@ function groupFor(window) {
     }
 }
 
+/**
+ * Label for a saved group id. Ids without an installed desktop file take the
+ * label of a live window in that group on the active workspace, the same text
+ * its chip shows (GNOME names a window-backed app by its WM class as-is).
+ */
 function labelFor(id) {
+    if (id === TERMINALS)
+        return defaultLabel(id);
     const name = id.startsWith('app:') ? Shell.AppSystem.get_default().lookup_app(id.slice(4))?.get_name() : null;
-    return name || defaultLabel(id);
+    if (name)
+        return name;
+    const workspace = global.workspace_manager.get_active_workspace();
+    for (const window of global.display.get_tab_list(Meta.TabList.NORMAL_ALL, workspace)) {
+        const group = groupFor(window);
+        if (group.id === id)
+            return group.label;
+    }
+    return defaultLabel(id);
 }
 
 const GridDialog = GObject.registerClass(
@@ -115,8 +130,10 @@ class GridDialog extends ModalDialog.ModalDialog {
         // never moves key focus or reflows the row under the pointer.
         this._chipBox = new St.Widget({
             style_class: 'tiling-grid-chips', x_expand: true,
+            // Natural chip widths, wrapped at the stylesheet's max-width.
             layout_manager: new Clutter.FlowLayout({
                 orientation: Clutter.Orientation.HORIZONTAL, column_spacing: 6, row_spacing: 6,
+                snap_to_grid: false,
             }),
         });
         this._chips = new Map();
