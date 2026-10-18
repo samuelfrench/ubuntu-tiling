@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {GridController} from '../extension/gridController.js';
-import {copyRect, gridCells} from '../extension/grids.js';
+import {FIT, copyRect, gridCells} from '../extension/grids.js';
 
 const area = {x: 60, y: 30, width: 3001, height: 901};
 
@@ -67,7 +67,7 @@ test('arrange saves original state and undo restores floating, tiled, maximized/
     Object.assign(s.windows[1], {maximized: 3, above: true});
     Object.assign(s.windows[2], {fullscreen: true});
     const before = s.windows.map(s.state);
-    assert.deepEqual(await s.controller.arrange(6), {ok: true, moved: 3, overflow: 0, count: 6});
+    assert.deepEqual(await s.controller.arrange(6), {ok: true, moved: 3, overflow: 0, count: 6, label: undefined});
     assert.equal(s.controller.canUndo, true);
     assert.equal(s.focus.at(-1), s.windows[0]);
     assert.equal((await s.controller.undo()).restored, 3);
@@ -263,4 +263,53 @@ test('recovery continues past one restore error and reports incomplete recovery'
     assert.equal(s.windows[1].isTiled, false);
     assert.equal(s.windows[2].isTiled, false);
     assert.match(s.errors.at(-1), /Some windows could not be restored/);
+});
+
+test('arranges only matching windows and returns the label', async () => {
+    const s = setup(5);
+    const matches = window => window.id === 1 || window.id === 3;
+    const result = await s.controller.arrange(FIT, s.context, {matches, label: 'Terminals'});
+    assert.deepEqual(result, {ok: true, moved: 2, overflow: 0, count: 2, label: 'Terminals'});
+    assert.deepEqual(s.tiles.map(tile => tile.window.id).sort(), [1, 3]);
+    const cells = gridCells(2, area, {ragged: true});
+    assert.deepEqual(s.tiles.map(tile => tile.rect).sort((a, b) => a.x - b.x), cells);
+});
+
+test('reports the filter label when nothing matches', async () => {
+    const s = setup(3);
+    const result = await s.controller.arrange(FIT, s.context, {matches: () => false, label: 'Terminals'});
+    assert.equal(result.ok, false);
+    assert.equal(s.errors.at(-1), 'No Terminals windows on this monitor and workspace.');
+    assert.equal(s.tiles.length, 0);
+    const empty = setup(0);
+    assert.equal((await empty.controller.arrange(6)).ok, false);
+    assert.equal(empty.errors.at(-1), 'No resizable windows on this monitor and workspace.');
+});
+
+test('arranges twelve and sixteen', async () => {
+    for (const layout of [12, 16]) {
+        const s = setup(16);
+        const result = await s.controller.arrange(layout);
+        assert.deepEqual(result, {ok: true, moved: layout, overflow: 16 - layout, count: layout, label: undefined});
+        assert.equal(s.tiles.length, layout);
+        assert.deepEqual(s.tiles.map(tile => tile.rect).sort((a, b) => a.y - b.y || a.x - b.x),
+            gridCells(layout, area).sort((a, b) => a.y - b.y || a.x - b.x));
+    }
+});
+
+test('fit layout is not a placeable tile layout', async () => {
+    const s = setup();
+    assert.equal((await s.controller.place(FIT, 0)).ok, false);
+    assert.equal(s.tiles.length, 0);
+});
+
+test('names the larger layout fix when an app minimum size overflows', async () => {
+    const s = setup();
+    const tile = s.deps.tile;
+    s.deps.tile = async (...args) => {
+        await tile(...args);
+        args[0].frame.width += 200;
+    };
+    assert.equal((await s.controller.arrange(6)).ok, false);
+    assert.equal(s.errors.at(-1), 'A window’s minimum size is too large for this layout. Try a layout with fewer tiles.');
 });

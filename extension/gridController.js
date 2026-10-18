@@ -28,12 +28,12 @@ export class GridController {
         return {...context, windows: this._deps.getWindows(context)};
     }
 
-    async arrange(count, context = this.captureContext()) {
+    async arrange(layout, context = this.captureContext(), {matches, label} = {}) {
         return this._run(context, () => {
-            const plan = planGrid(count, this._current(context), this._deps.normalType);
+            const plan = planGrid(layout, this._current(context), this._deps.normalType, matches);
             if (!plan.moves.length)
-                throw new Error('No resizable windows on this monitor and workspace.');
-            return {...plan, count, arrange: true};
+                throw new Error(`No ${label ? `${label} ` : 'resizable '}windows on this monitor and workspace.`);
+            return {...plan, label, arrange: true};
         });
     }
 
@@ -86,13 +86,13 @@ export class GridController {
                     !['x', 'y', 'width', 'height'].every(k => window.tiledRect[k] === rect[k]))
                     throw new Error('A window refused to tile. The previous layout was restored.');
                 if (!fitsCell(window.get_frame_rect(), rect))
-                    throw new Error('A window’s minimum size is too large for this layout. Try six tiles or a larger monitor.');
+                    throw new Error('A window’s minimum size is too large for this layout. Try a layout with fewer tiles.');
             }
             if (plan.arrange)
                 this._deps.finishArrange?.(plan.moves.map(move => move.window));
             this._undo = {context, snapshots};
             this._deps.focus(context.focusWindow, context);
-            return {ok: true, moved: plan.moves.length, overflow: plan.overflow, count: plan.count};
+            return {ok: true, moved: plan.moves.length, overflow: plan.overflow, count: plan.count, label: plan.label};
         } catch (error) {
             if (job.cancelled)
                 return {ok: false, reason: 'disabled'};
