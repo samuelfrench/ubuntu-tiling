@@ -29,7 +29,7 @@ Super is usually the Windows key. Tab and arrow keys navigate the native control
 ### Program types
 
 - **Terminals:** every program whose desktop file has the `TerminalEmulator` category (GNOME Terminal, Console, Ptyxis, Kitty, Alacritty, WezTerm, Ghostty, Konsole, Tilix and others), plus windows whose WM class is a known terminal when there is no desktop file (for example `kitty`, `Alacritty`, `foot`, `xterm`, `org.wezfurlong.wezterm`).
-- **Other programs:** one chip per desktop file. Windows without one are grouped by WM class; anything left over is **Other windows**.
+- **Other programs:** one chip per desktop file. Windows without one are grouped by WM class; anything left over is **Other**.
 
 The choice is saved when you press **Arrange windows**; Cancel and chip clicks do not change it. Every Super+Alt arrange shortcut then uses the saved choice, and the notification names it, for example `Arranged 11 windows (Terminals). Super+Alt+Z to undo.` A saved program with no open windows still shows a chip with count 0, so you can clear it.
 

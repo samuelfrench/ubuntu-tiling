@@ -86,7 +86,7 @@ function groupFor(window) {
             wmClass: window.get_wm_class(),
         });
     } catch {
-        return {id: 'other', label: 'Other windows'};
+        return {id: 'other', label: 'Other'};
     }
 }
 

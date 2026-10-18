@@ -6,7 +6,8 @@
  */
 export const TERMINALS = 'terminals';
 const OTHER = 'other';
-const OTHER_LABEL = 'Other windows';
+// Copy reads `No Other windows ...`, so the label omits the word windows.
+const OTHER_LABEL = 'Other';
 
 // Lowercase WM classes of terminals that may lack a desktop file.
 const TERMINAL_CLASSES = Object.freeze([

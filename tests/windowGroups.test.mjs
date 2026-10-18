@@ -8,7 +8,7 @@ import {
 const terminal = {id: 'terminals', label: 'Terminals'};
 const chatgpt = {id: 'app:chatgpt.desktop', label: 'ChatGPT'};
 const grok = {id: 'class:grok-bot', label: 'Grok Bot'};
-const other = {id: 'other', label: 'Other windows'};
+const other = {id: 'other', label: 'Other'};
 
 test('TERMINALS is the terminals group id', () => {
     assert.equal(TERMINALS, 'terminals');
@@ -67,7 +67,7 @@ test('defaultLabel', () => {
     assert.equal(defaultLabel('terminals'), 'Terminals');
     assert.equal(defaultLabel('app:chatgpt.desktop'), 'chatgpt');
     assert.equal(defaultLabel('class:grok-bot'), 'grok-bot');
-    assert.equal(defaultLabel('other'), 'Other windows');
+    assert.equal(defaultLabel('other'), 'Other');
 });
 
 const wins = [
@@ -110,7 +110,7 @@ test('groupFor errors are not fatal', () => {
         return w.g;
     };
     const rows = summarizeGroups(wins, throwing);
-    assert.deepEqual(rows.find(r => r.id === 'other'), {id: 'other', label: 'Other windows', count: 1, selected: false});
+    assert.deepEqual(rows.find(r => r.id === 'other'), {id: 'other', label: 'Other', count: 1, selected: false});
     assert.equal(windowMatcher(['class:grok-bot'], throwing)(wins[3]), false);
     assert.equal(windowMatcher(['terminals'], throwing)(wins[0]), true);
 });
@@ -141,4 +141,5 @@ test('describeFilter', () => {
     const labels = {terminals: 'Terminals', 'app:chatgpt.desktop': 'ChatGPT'};
     assert.equal(describeFilter(['terminals', 'app:chatgpt.desktop'], id => labels[id]), 'Terminals + ChatGPT');
     assert.equal(describeFilter(['terminals']), 'Terminals');
+    assert.equal(describeFilter(['other']), 'Other');
 });
