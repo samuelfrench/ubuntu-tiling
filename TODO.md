@@ -10,7 +10,7 @@ _None._
 
 ## Waiting on Sam
 
-- [ ] Easy six- and eight-window layouts — Version 2 installed and verified; native tests and CI pass; Sam reloads GNOME once to activate the new controls · _product_ · [details](docs/todo/product/six-eight-window-grids.md)
+- [ ] Easy six- and eight-window layouts — Version 2 now ACTIVE live (verified 2026-10-18); Sam tries Super+Alt+6/8 and Z, then records the result · _product_ · [details](docs/todo/product/six-eight-window-grids.md)
 
 ## Scheduled (by due date)
 

@@ -3,9 +3,9 @@ title: "Easy six- and eight-window layouts"
 status: waiting-sam
 area: product
 due: null
-updated: 2026-10-09
+updated: 2026-10-18
 owner: sam
-brief: "Version 2 installed and verified; native tests and CI pass; Sam reloads GNOME once to activate the new controls"
+brief: "Version 2 now ACTIVE live (verified 2026-10-18); Sam tries Super+Alt+6/8 and Z, then records the result"
 refs:
   - "extension/"
   - "docs/verification/2026-10-09/README.md"
@@ -22,7 +22,8 @@ test: null
 
 - Runtime commit **d5ef510aa004f95ed3f49b1933b4b034559445bf** pushed to main; [CI 38010654491](https://github.com/samuelfrench/ubuntu-tiling/actions/runs/38010654491) **SUCCESS**. Later closeout-only commits leave the installed runtime unchanged.
 - `./install.sh` installed version **2** at **2026-10-10 00:49:30 UTC** (October 9 CT). All **9** runtime source files match exactly; compiled schema and all four shortcut defaults verified. Unrelated extension settings preserved; stock `tiling-assistant@ubuntu.com` ACTIVE. Receipt: `docs/verification/2026-10-09/installed.json`. Prior installed copy retained at `/home/sam/.local/share/ubuntu-tiling-backups/20261010T004930Z/`.
-- **Live activation pending:** Shell still runs Columns **version 1**, ACTIVE, PID **12141**, started **2026-10-09 13:18:05**. The installed version 2 is not yet loaded into that process. Current host is GNOME 46, X11, 5120×1440. No live grid-use success is claimed.
+- **Live activation confirmed 2026-10-18:** `gnome-extensions info` shows Version **2**, State **ACTIVE**; gnome-shell PID **6883** started **2026-10-17 21:40** CT. Sam's own live grid trial is still unrecorded.
+- **Superseded (2026-10-09):** Shell still runs Columns **version 1**, ACTIVE, PID **12141**, started **2026-10-09 13:18:05**. The installed version 2 is not yet loaded into that process. Current host is GNOME 46, X11, 5120×1440. No live grid-use success is claimed.
 - `node --test tests/*.test.mjs`: **77/77** (52 existing + 25 new). `node --test scripts/todo/__tests__/*.test.mjs`: **27/27**. Generated TODO, strict schema compilation and syntax checks pass. `python3 tests/integration/install.py`: PASS install/reinstall/uninstall with private settings, exact-file checks and unrelated settings retained.
 - `tests/integration/run.py --keep`: final native **PASS**, stock `/tmp/ut-stock-rmon76q4`, extension `/tmp/ut-columns-hxz7d1rw`; retained JSON and screenshots in `docs/verification/2026-10-09/`. Covers existing 3/4/5 columns, real six/eight shortcuts, minimized/other-workspace exclusions, both picker modes, real panel click, number placement, Escape, Undo including native underlying restore frames, exact old/new gaps, overflow group reconciliation, gapped-max hooks, disable/re-enable and cancellation during native preparation. Last native run precedes only the actionable timeout text change, not geometry/lifecycle changes. No extension JavaScript error observed. Live PID was unchanged after all test processes exited.
 

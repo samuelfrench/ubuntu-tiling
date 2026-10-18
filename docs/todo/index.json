@@ -104,9 +104,9 @@
     "status": "waiting-sam",
     "area": "product",
     "due": null,
-    "updated": "2026-10-09",
+    "updated": "2026-10-18",
     "owner": "sam",
-    "brief": "Version 2 installed and verified; native tests and CI pass; Sam reloads GNOME once to activate the new controls",
+    "brief": "Version 2 now ACTIVE live (verified 2026-10-18); Sam tries Super+Alt+6/8 and Z, then records the result",
     "refs": [
       "extension/",
       "docs/verification/2026-10-09/README.md",
