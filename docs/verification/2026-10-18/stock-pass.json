@@ -1,0 +1,259 @@
+{
+ "mode": "stock",
+ "ready": {
+  "startingUp": false,
+  "actionMode": 1,
+  "workArea": {
+   "x": 0,
+   "y": 32,
+   "width": 2560,
+   "height": 688
+  },
+  "tilingAssistant": 1,
+  "columns": null,
+  "gridControls": false,
+  "errors": {
+   "tilingAssistant": "",
+   "columns": ""
+  }
+ },
+ "after_C_super_right": [
+  {
+   "title": "ut-A",
+   "frame": {
+    "x": 0,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 0,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  },
+  {
+   "title": "ut-B",
+   "frame": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  },
+  {
+   "title": "ut-C",
+   "frame": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  }
+ ],
+ "drag": {
+  "grabbed": true
+ },
+ "after_D_drag_right": [
+  {
+   "title": "ut-A",
+   "frame": {
+    "x": 0,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 0,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  },
+  {
+   "title": "ut-B",
+   "frame": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  },
+  {
+   "title": "ut-C",
+   "frame": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  },
+  {
+   "title": "ut-D",
+   "frame": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  }
+ ],
+ "popup_after_drag": 1,
+ "after_E_super_left": [
+  {
+   "title": "ut-A",
+   "frame": {
+    "x": 0,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 0,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  },
+  {
+   "title": "ut-B",
+   "frame": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  },
+  {
+   "title": "ut-C",
+   "frame": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  },
+  {
+   "title": "ut-D",
+   "frame": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 1280,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  },
+  {
+   "title": "ut-E",
+   "frame": {
+    "x": 0,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "tiled": {
+    "x": 0,
+    "y": 32,
+    "width": 1280,
+    "height": 688
+   },
+   "maximized": 0,
+   "fullscreen": false,
+   "minimized": false,
+   "workspace": 0
+  }
+ ],
+ "extension_log_errors": []
+}

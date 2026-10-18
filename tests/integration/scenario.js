@@ -150,27 +150,46 @@ export async function dismissModal() {
     return open;
 }
 
-/** Real keyboard input for the public grid controls, local to this compositor. */
-export async function gridKey(value, shortcut = true) {
+/**
+ * Real keyboard input for the public grid controls, local to this compositor.
+ * `shortcut` holds Super+Alt; `shift` also holds Shift_L, so `gridKey('2', true, true)`
+ * is Super+Alt+Shift+2. Mutter matches bindings by keycode and modifiers, and
+ * the virtual keyboard sends KEY_2 at level 0 without touching Shift.
+ */
+export async function gridKey(value, shortcut = true, shift = false) {
     devices();
     const symbol = value === 'Space' ? Clutter.KEY_space :
         value === 'Escape' ? Clutter.KEY_Escape : Clutter[`KEY_${value}`];
     if (symbol === undefined)
         throw new Error(`Unknown key ${value}`);
-    if (shortcut) {
-        key(Clutter.KEY_Super_L, Clutter.KeyState.PRESSED);
-        key(Clutter.KEY_Alt_L, Clutter.KeyState.PRESSED);
+    const modifiers = [
+        ...(shortcut ? [Clutter.KEY_Super_L, Clutter.KEY_Alt_L] : []),
+        ...(shift ? [Clutter.KEY_Shift_L] : []),
+    ];
+    for (const modifier of modifiers)
+        key(modifier, Clutter.KeyState.PRESSED);
+    if (modifiers.length)
         await sleep(50);
-    }
     key(symbol, Clutter.KeyState.PRESSED);
     await sleep(50);
     key(symbol, Clutter.KeyState.RELEASED);
-    if (shortcut) {
-        key(Clutter.KEY_Alt_L, Clutter.KeyState.RELEASED);
-        key(Clutter.KEY_Super_L, Clutter.KeyState.RELEASED);
-    }
+    for (const modifier of modifiers.reverse())
+        key(modifier, Clutter.KeyState.RELEASED);
     await sleep(700);
     return gridStatus();
+}
+
+const gridControls = () => Main.extensionManager.lookup(COLUMNS)?.stateObj?._gridControls;
+
+function pickerChips(dialog) {
+    if (!dialog._allChip)
+        return null;
+    return [
+        {id: null, label: dialog._allChip.label, checked: dialog._allChip.checked},
+        ...[...dialog._chips.values()].map(chip => ({
+            id: chip.id, label: chip.button.label, count: chip.count, checked: chip.button.checked,
+        })),
+    ];
 }
 
 export function gridStatus() {
@@ -185,6 +204,12 @@ export function gridStatus() {
             count: dialog._count,
             cells: dialog._grid.get_children().flatMap(row => row.get_children().map(cell => cell.label)),
             title: dialog._windowLabel.text,
+            rows: dialog._grid.get_children().map(row => row.get_n_children()),
+            selected: dialog._selected ? [...dialog._selected] : null,
+            chips: pickerChips(dialog),
+            fit: dialog._selectors?.get('all')?.label ?? null,
+            summary: dialog._summary?.text ?? null,
+            arrangeReactive: dialog._arrangeButton?.reactive ?? null,
         } : null,
     };
 }
@@ -220,24 +245,216 @@ export async function windowAction(title, action) {
     return state();
 }
 
+/**
+ * Resolves after the stage paints its next frame, or after `timeout` ms.
+ * Clutter lays out before it paints, so allocations are current afterwards.
+ */
+function nextFrame(timeout = 250) {
+    return new Promise(resolve => {
+        let signal = 0;
+        let timer = 0;
+        const finish = () => {
+            if (signal)
+                global.stage.disconnect(signal);
+            if (timer)
+                GLib.source_remove(timer);
+            signal = timer = 0;
+            resolve();
+        };
+        signal = global.stage.connect('after-paint', finish);
+        timer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeout, () => {
+            timer = 0;
+            finish();
+            return GLib.SOURCE_REMOVE;
+        });
+        global.stage.queue_redraw();
+    });
+}
+
+/**
+ * Stage bounds once the actor has an allocation that is identical on two
+ * consecutive frames (at most 10). get_transformed_size() reports the
+ * preferred size while a relayout is pending, e.g. right after the picker
+ * rebuilds its preview, so a single read can be stale.
+ */
+async function settledBounds(actor) {
+    const read = () => {
+        const [x, y] = actor.get_transformed_position();
+        const [width, height] = actor.get_transformed_size();
+        return {x, y, width, height};
+    };
+    let previous = null;
+    for (let frame = 1; frame <= 10; frame++) {
+        await nextFrame();
+        const bounds = actor.has_allocation() ? read() : null;
+        if (bounds && previous && ['x', 'y', 'width', 'height'].every(k => bounds[k] === previous[k]))
+            return {...bounds, settled: true, frames: frame};
+        previous = bounds;
+    }
+    return {...previous ?? read(), settled: false, frames: 10};
+}
+
+/**
+ * The visible picker box. In GNOME 46 `ModalDialog.dialogLayout` is a
+ * `Dialog` St.Widget that fills the monitor-sized background stack; the
+ * dialog the user sees is its child `_dialog` (St.BoxLayout `modal-dialog`,
+ * centered at its natural size).
+ */
+function pickerBox(dialog) {
+    return dialog.dialogLayout._dialog ?? dialog.dialogLayout;
+}
+
+/**
+ * Captures the visible dialog box. `clipped` is true when part of it lies
+ * outside the stage (only the on-stage part is captured); `settled` is false
+ * when its bounds kept changing for 10 frames.
+ */
 export async function pickerScreenshot(path) {
     const dialog = Main.extensionManager.lookup(COLUMNS)?.stateObj?._gridControls?._dialog;
     if (!dialog)
         throw new Error('Picker is not open');
-    const actor = dialog.dialogLayout;
-    const [x, y] = actor.get_transformed_position();
-    const [width, height] = actor.get_transformed_size();
+    const actor = pickerBox(dialog);
+    const {x, y, width, height, settled, frames} = await settledBounds(actor);
+    const area = [Math.floor(x), Math.floor(y), Math.ceil(width), Math.ceil(height)];
+    const left = Math.max(0, area[0]);
+    const top = Math.max(0, area[1]);
+    const right = Math.min(global.stage.width, area[0] + area[2]);
+    const bottom = Math.min(global.stage.height, area[1] + area[3]);
+    const clipped = left !== area[0] || top !== area[1] || right - left !== area[2] || bottom - top !== area[3];
     const stream = Gio.File.new_for_path(path).replace(null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
-    await new Shell.Screenshot().screenshot_area(Math.floor(x), Math.floor(y), Math.ceil(width), Math.ceil(height), stream);
+    await new Shell.Screenshot().screenshot_area(left, top, right - left, bottom - top, stream);
     stream.close(null);
-    return {path, x, y, width, height};
+    return {
+        path, x, y, width, height, clipped, settled, frames,
+        actor: actor === dialog.dialogLayout ? 'dialogLayout' : actor.style_class,
+    };
 }
 
-export async function pickerLayout(count) {
+/**
+ * Clicks a picker actor with the real pointer when it is the reactive actor at
+ * its own center. If something else is on top (a notification banner) or the
+ * center is off the stage, emits `clicked` instead and says so; an insensitive
+ * or missing actor is not clicked at all.
+ */
+async function clickActor(actor, what) {
+    devices();
+    if (!actor)
+        return {method: 'none', reason: `no ${what}`};
+    if (!actor.reactive)
+        return {method: 'none', reason: `${what} is insensitive`};
+    const {x, y, width, height} = await settledBounds(actor);
+    const cx = Math.round(x + width / 2);
+    const cy = Math.round(y + height / 2);
+    const onStage = cx >= 0 && cy >= 0 && cx < global.stage.width && cy < global.stage.height;
+    const picked = onStage ? global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, cx, cy) : null;
+    const reachable = actor.mapped && Boolean(picked) && (picked === actor || actor.contains(picked));
+    const click = {
+        method: reachable ? 'pointer' : 'emit', what, x: cx, y: cy, bounds: {x, y, width, height},
+        picked: picked ? picked.constructor.$gtype?.name ?? `${picked}` : null,
+    };
+    if (reachable) {
+        pointer.notify_absolute_motion(now(), cx, cy);
+        await sleep(100);
+        pointer.notify_button(now(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.PRESSED);
+        await sleep(50);
+        pointer.notify_button(now(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.RELEASED);
+    } else {
+        actor.emit('clicked', 1);
+    }
+    await sleep(200);
+    return click;
+}
+
+/**
+ * Selects a layout selector by count or 'all'. Without `byPointer` it emits
+ * `clicked` (the original v2 path); with it, it clicks like a user and also
+ * returns `click`.
+ */
+export async function pickerLayout(count, byPointer = false) {
     const dialog = Main.extensionManager.lookup(COLUMNS)?.stateObj?._gridControls?._dialog;
+    if (byPointer) {
+        const click = await clickActor(dialog?._selectors?.get(count) ?? null, `layout ${count}`);
+        return {...gridStatus(), click};
+    }
     dialog._selectors.get(count).emit('clicked', 1);
     await sleep(150);
     return gridStatus();
+}
+
+/** Clicks a program chip by group id (`terminals`, `app:…`), chip text, or `All windows`. */
+export async function pickerChip(idOrLabel) {
+    const dialog = gridControls()?._dialog;
+    let actor = null;
+    if (dialog?._chips) {
+        const chip = dialog._chips.get(idOrLabel) ??
+            [...dialog._chips.values()].find(candidate => candidate.text === idOrLabel);
+        actor = chip?.button ?? (dialog._allChip?.label === idOrLabel ? dialog._allChip : null);
+    }
+    const click = await clickActor(actor, `chip ${idOrLabel}`);
+    return {...gridStatus(), click};
+}
+
+/** Clicks a dialog button by label (`Arrange windows`, `Cancel`) and waits for the layout to finish. */
+export async function pickerButton(label) {
+    const dialog = gridControls()?._dialog;
+    const actor = dialog?.buttonLayout?.get_children().find(button => button.label === label) ?? null;
+    const click = await clickActor(actor, `button ${label}`);
+    return {...await waitIdle(), click};
+}
+
+/** Waits until no arrangement or undo is running, then lets frames settle. */
+export async function waitIdle() {
+    for (let i = 0; i < 100 && gridControls()?.controller.busy; i++)
+        await sleep(100);
+    await sleep(300);
+    return gridStatus();
+}
+
+/** Re-enables tiling-columns and waits for its grid controls (the imports are async). */
+export async function enableColumns() {
+    Main.extensionManager.enableExtension(COLUMNS);
+    for (let i = 0; i < 50 && !gridControls(); i++)
+        await sleep(100);
+    await sleep(200);
+    return {state: Main.extensionManager.lookup(COLUMNS)?.state ?? null, ...gridStatus()};
+}
+
+/** What Mutter and Shell.WindowTracker report for a window's program identity. */
+export async function appIdentity(title) {
+    const window = windowByTitle(title);
+    if (!window)
+        return {title, missing: true};
+    const tracker = Shell.WindowTracker.get_default();
+    for (let i = 0; i < 10 && !tracker.get_window_app(window)?.get_app_info(); i++)
+        await sleep(100);
+    const app = tracker.get_window_app(window);
+    const info = app?.get_app_info() ?? null;
+    return {
+        title, wmClass: window.get_wm_class(), wmClassInstance: window.get_wm_class_instance(),
+        sandboxedAppId: window.get_sandboxed_app_id(),
+        appId: app?.get_id() ?? null, appName: app?.get_name() ?? null,
+        hasAppInfo: Boolean(info), categories: info?.get_categories?.() ?? null,
+    };
+}
+
+let columnsSettingsCache = null;
+
+/** One Gio.Settings for the extension schema, separate from the controls' own instance. */
+function columnsSettings() {
+    columnsSettingsCache ??= Main.extensionManager.lookup(COLUMNS).stateObj.getSettings();
+    return columnsSettingsCache;
+}
+
+/** The persisted program-type filter (`window-filter`). */
+export function windowFilter() {
+    return columnsSettings().get_strv('window-filter');
+}
+
+export function setWindowFilter(selected) {
+    const settings = columnsSettings();
+    settings.set_strv('window-filter', selected);
+    Gio.Settings.sync();
+    return settings.get_strv('window-filter');
 }
 
 async function tilingModules() {
@@ -314,6 +531,21 @@ export async function cancelDuringNativePreparation(title) {
     const before = state();
     await sleep(250);
     return {result, waiters: controls._waiters.size, status: gridStatus(), before, after: state()};
+}
+
+/**
+ * Focus and stacking for the visible ut- windows on the active workspace:
+ * `windows` runs from the topmost window down, in Mutter's stacking order.
+ */
+export function stacking() {
+    const workspace = global.workspace_manager.get_active_workspace();
+    const visible = global.display.list_all_windows().filter(w => w.get_title()?.startsWith('ut-') &&
+        !w.minimized && w.located_on_workspace(workspace));
+    return {
+        focus: global.display.focus_window?.get_title() ?? null,
+        windows: global.display.sort_windows_by_stacking(visible).reverse()
+            .map(w => ({title: w.get_title(), frame: plain(w.get_frame_rect())})),
+    };
 }
 
 export function state() {

@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {GridController} from '../extension/gridController.js';
-import {copyRect, gridCells} from '../extension/grids.js';
+import {FIT, copyRect, gridCells} from '../extension/grids.js';
 
 const area = {x: 60, y: 30, width: 3001, height: 901};
 
@@ -35,6 +35,7 @@ function setup(count = 3) {
     });
     const deps = {
         normalType: 0,
+        maximizedBoth: 3,
         getContext: () => context,
         getWindows: () => windows,
         isContextCurrent: () => true,
@@ -67,7 +68,7 @@ test('arrange saves original state and undo restores floating, tiled, maximized/
     Object.assign(s.windows[1], {maximized: 3, above: true});
     Object.assign(s.windows[2], {fullscreen: true});
     const before = s.windows.map(s.state);
-    assert.deepEqual(await s.controller.arrange(6), {ok: true, moved: 3, overflow: 0, count: 6});
+    assert.deepEqual(await s.controller.arrange(6), {ok: true, moved: 3, overflow: 0, count: 6, label: undefined});
     assert.equal(s.controller.canUndo, true);
     assert.equal(s.focus.at(-1), s.windows[0]);
     assert.equal((await s.controller.undo()).restored, 3);
@@ -263,4 +264,161 @@ test('recovery continues past one restore error and reports incomplete recovery'
     assert.equal(s.windows[1].isTiled, false);
     assert.equal(s.windows[2].isTiled, false);
     assert.match(s.errors.at(-1), /Some windows could not be restored/);
+});
+
+test('arranges only matching windows and returns the label', async () => {
+    const s = setup(5);
+    const matches = window => window.id === 1 || window.id === 3;
+    const result = await s.controller.arrange(FIT, s.context, {matches, label: 'Terminals'});
+    assert.deepEqual(result, {ok: true, moved: 2, overflow: 0, count: 2, label: 'Terminals'});
+    assert.deepEqual(s.tiles.map(tile => tile.window.id).sort(), [1, 3]);
+    const cells = gridCells(2, area, {ragged: true});
+    assert.deepEqual(s.tiles.map(tile => tile.rect).sort((a, b) => a.x - b.x), cells);
+});
+
+test('reports the filter label when nothing matches', async () => {
+    const s = setup(3);
+    const result = await s.controller.arrange(FIT, s.context, {matches: () => false, label: 'Terminals'});
+    assert.equal(result.ok, false);
+    assert.equal(s.errors.at(-1), 'No Terminals windows on this monitor and workspace.');
+    assert.equal(s.tiles.length, 0);
+    const empty = setup(0);
+    assert.equal((await empty.controller.arrange(6)).ok, false);
+    assert.equal(empty.errors.at(-1), 'No resizable windows on this monitor and workspace.');
+});
+
+test('arranges twelve and sixteen', async () => {
+    for (const layout of [12, 16]) {
+        const s = setup(16);
+        const result = await s.controller.arrange(layout);
+        assert.deepEqual(result, {ok: true, moved: layout, overflow: 16 - layout, count: layout, label: undefined});
+        assert.equal(s.tiles.length, layout);
+        assert.deepEqual(s.tiles.map(tile => tile.rect).sort((a, b) => a.y - b.y || a.x - b.x),
+            gridCells(layout, area).sort((a, b) => a.y - b.y || a.x - b.x));
+    }
+});
+
+test('fit layout is not a placeable tile layout', async () => {
+    const s = setup();
+    assert.equal((await s.controller.place(FIT, 0)).ok, false);
+    assert.equal(s.tiles.length, 0);
+});
+
+test('names the larger layout fix when an app minimum size overflows', async () => {
+    const s = setup();
+    const tile = s.deps.tile;
+    s.deps.tile = async (...args) => {
+        await tile(...args);
+        args[0].frame.width += 200;
+    };
+    assert.equal((await s.controller.arrange(6)).ok, false);
+    assert.equal(s.errors.at(-1), 'A window’s minimum size is too large for this layout. Try a layout with fewer tiles.');
+});
+
+/** Tiling Assistant's tile(): a rect equal to the work area maximizes instead of tiling. */
+function tilingAssistantTile(s, gap = 0) {
+    return async (window, rect, monitor) => {
+        s.tiles.push({window, rect, monitor});
+        const maximize = ['x', 'y', 'width', 'height'].every(k => rect[k] === area[k]);
+        window.isTiled = !maximize;
+        window.untiledRect ||= copyRect(window.frame);
+        if (maximize && !gap) {
+            window.tiledRect = null;
+            window.maximized = 3;
+            window.frame = copyRect(area);
+            return;
+        }
+        // Maximize with gaps keeps tiledRect at the work area, with isTiled false.
+        window.tiledRect = copyRect(rect);
+        window.frame = {x: rect.x + gap, y: rect.y + gap, width: rect.width - 2 * gap, height: rect.height - 2 * gap};
+    };
+}
+
+test('All with one matching window accepts Tiling Assistant maximize, natively or with gaps, and Undo restores it', async () => {
+    for (const gap of [0, 12]) {
+        const s = setup(3);
+        s.deps.tile = tilingAssistantTile(s, gap);
+        const groups = [];
+        s.deps.finishArrange = windows => groups.push(windows);
+        const before = s.windows.map(s.state);
+        const result = await s.controller.arrange(FIT, s.context, {matches: window => window.id === 1, label: 'Solo'});
+        assert.deepEqual(result, {ok: true, moved: 1, overflow: 0, count: 1, label: 'Solo'}, `gap ${gap}`);
+        assert.deepEqual(s.errors, []);
+        assert.deepEqual(s.tiles.map(tile => [tile.window.id, tile.rect]), [[1, area]]);
+        assert.equal(s.windows[1].isTiled, false);
+        assert.equal(s.windows[1].maximized, gap ? 0 : 3);
+        assert.deepEqual(s.windows[1].tiledRect, gap ? area : null);
+        // The adapter keeps only isTiled windows, so its tile group is empty here.
+        assert.deepEqual(groups, [[s.windows[1]]]);
+        assert.deepEqual(s.windows.filter(window => window.id !== 1).map(s.state), before.filter((_, id) => id !== 1));
+        assert.equal(before[1].maximized, 0);
+        assert.deepEqual(await s.controller.undo(), {ok: true, restored: 1});
+        assert.deepEqual(s.windows.map(s.state), before);
+    }
+});
+
+test('a full work area cell still rejects a window that is neither maximized both ways nor tiled to it', async () => {
+    for (const maximized of [0, 1, 2]) {
+        const s = setup(1);
+        s.deps.tile = async (window, rect) => {
+            s.tiles.push({window, rect});
+            window.isTiled = false;
+            window.tiledRect = null;
+            window.maximized = maximized;
+        };
+        const before = s.windows.map(s.state);
+        assert.equal((await s.controller.arrange(FIT)).ok, false);
+        assert.equal(s.errors.at(-1), 'A window refused to tile. The previous layout was restored.');
+        assert.deepEqual(s.windows.map(s.state), before);
+    }
+});
+
+test('a maximized All window larger than the work area reports the All advice', async () => {
+    const s = setup(1);
+    const tile = tilingAssistantTile(s);
+    s.deps.tile = async (...args) => {
+        await tile(...args);
+        args[0].frame = {...area, width: area.width + 200};
+    };
+    assert.equal((await s.controller.arrange(FIT)).ok, false);
+    assert.equal(s.errors.at(-1), 'A window’s minimum size is too large for this layout. Pick fewer programs or a numbered layout.');
+});
+
+test('names fewer programs or a numbered layout when an All window minimum size overflows', async () => {
+    const s = setup();
+    const tile = s.deps.tile;
+    s.deps.tile = async (...args) => {
+        await tile(...args);
+        args[0].frame.width += 200;
+    };
+    assert.equal((await s.controller.arrange(FIT)).ok, false);
+    assert.equal(s.errors.at(-1), 'A window’s minimum size is too large for this layout. Pick fewer programs or a numbered layout.');
+});
+
+test('focuses the most recent arranged window when the focused one is filtered out; Undo and errors refocus the original', async () => {
+    const s = setup(4);
+    // MRU order is the window order; the spatial sort would put windows[2] first.
+    s.windows[1].frame = {...s.windows[1].frame, x: 2000};
+    const matches = window => window.id !== 0;
+    assert.equal((await s.controller.arrange(FIT, s.context, {matches, label: 'Terminals'})).ok, true);
+    assert.equal(s.tiles[0].window, s.windows[2]);
+    assert.equal(s.focus.at(-1), s.windows[1]);
+    assert.equal((await s.controller.undo()).ok, true);
+    assert.equal(s.focus.at(-1), s.windows[0]);
+
+    const tile = s.deps.tile;
+    s.deps.tile = async (...args) => {
+        await tile(...args);
+        if (args[0] === s.windows[3])
+            throw new Error('move rejected');
+    };
+    assert.equal((await s.controller.arrange(FIT, s.context, {matches})).ok, false);
+    assert.equal(s.focus.at(-1), s.windows[0]);
+});
+
+test('arranging with the focused window chosen keeps it focused', async () => {
+    const s = setup(4);
+    s.context.focusWindow = s.windows[3];
+    assert.equal((await s.controller.arrange(FIT)).ok, true);
+    assert.equal(s.focus.at(-1), s.windows[3]);
 });

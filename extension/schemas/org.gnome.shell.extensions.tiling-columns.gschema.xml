@@ -3,19 +3,48 @@
   <schema id="org.gnome.shell.extensions.tiling-columns" path="/org/gnome/shell/extensions/tiling-columns/">
     <key name="show-grid-picker" type="as">
       <default>['&lt;Super&gt;&lt;Alt&gt;space']</default>
-      <summary>Open the six/eight-window layout picker</summary>
+      <summary>Open the window layout picker</summary>
+    </key>
+    <key name="arrange-all-windows" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;a']</default>
+      <summary>Arrange every matching window, up to 16, in a grid sized to them</summary>
+    </key>
+    <key name="arrange-four-windows" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;4']</default>
+      <summary>Arrange up to four windows</summary>
     </key>
     <key name="arrange-six-windows" type="as">
       <default>['&lt;Super&gt;&lt;Alt&gt;6']</default>
-      <summary>Arrange windows in three columns and two rows</summary>
+      <summary>Arrange up to six windows</summary>
     </key>
     <key name="arrange-eight-windows" type="as">
       <default>['&lt;Super&gt;&lt;Alt&gt;8']</default>
-      <summary>Arrange windows in four columns and two rows</summary>
+      <summary>Arrange up to eight windows</summary>
+    </key>
+    <key name="arrange-nine-windows" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;9']</default>
+      <summary>Arrange up to nine windows</summary>
+    </key>
+    <key name="arrange-ten-windows" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;0']</default>
+      <summary>Arrange up to ten windows</summary>
+    </key>
+    <key name="arrange-twelve-windows" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;&lt;Shift&gt;2']</default>
+      <summary>Arrange up to twelve windows</summary>
+    </key>
+    <key name="arrange-sixteen-windows" type="as">
+      <default>['&lt;Super&gt;&lt;Alt&gt;&lt;Shift&gt;6']</default>
+      <summary>Arrange up to sixteen windows</summary>
     </key>
     <key name="undo-grid-layout" type="as">
       <default>['&lt;Super&gt;&lt;Alt&gt;z']</default>
       <summary>Undo the latest grid layout or tile placement</summary>
+    </key>
+    <key name="window-filter" type="as">
+      <default>[]</default>
+      <summary>Program types that layouts arrange</summary>
+      <description>Group ids saved by the picker's Arrange button: terminals, app:DESKTOP-ID, class:WM-CLASS or other. Every arrange shortcut uses them. Empty arranges all windows.</description>
     </key>
   </schema>
 </schemalist>
