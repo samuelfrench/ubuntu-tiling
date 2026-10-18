@@ -15,9 +15,19 @@ test('TERMINALS is the terminals group id', () => {
 });
 
 test('TerminalEmulator category is a terminal (array and desktop-file string)', () => {
-    const base = {appId: 'org.gnome.Terminal.desktop', appName: 'Terminal', hasAppInfo: true, wmClass: 'Gnome-terminal'};
-    assert.deepEqual(classifyWindow({...base, categories: ['GNOME', 'GTK', 'System', 'TerminalEmulator']}), terminal);
+    // WM class is deliberately not in the known-terminal list, so only the category can match.
+    const base = {appId: 'some-term.desktop', appName: 'SomeTerm', hasAppInfo: true, wmClass: 'SomeTerm'};
+    assert.deepEqual(classifyWindow({...base, categories: ['System', 'TerminalEmulator']}), terminal);
     assert.deepEqual(classifyWindow({...base, categories: 'GNOME;GTK;System;TerminalEmulator;'}), terminal);
+    assert.deepEqual(classifyWindow({...base, categories: ['System']}), {id: 'app:some-term.desktop', label: 'SomeTerm'});
+    assert.deepEqual(classifyWindow({...base, categories: 'System;'}), {id: 'app:some-term.desktop', label: 'SomeTerm'});
+});
+
+test('gnome-terminal is a terminal', () => {
+    assert.deepEqual(classifyWindow({
+        appId: 'org.gnome.Terminal.desktop', appName: 'Terminal', hasAppInfo: true,
+        categories: 'GNOME;GTK;System;TerminalEmulator;', wmClass: 'Gnome-terminal',
+    }), terminal);
 });
 
 test('known terminal WM classes without app info are terminals, case-insensitively', () => {
