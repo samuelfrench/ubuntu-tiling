@@ -36,6 +36,9 @@ TOLERANCE = 2
 # Windows opened with Wayland app id ut-term; the private desktop file below makes
 # Shell.WindowTracker map them to ut-term.desktop, a TerminalEmulator.
 TERMINALS = ["ut-T1", "ut-T2", "ut-T3"]
+# Opened with Wayland app id ut-solo and no desktop file: group class:ut-solo.
+SOLO = "ut-S1"
+MAXIMIZED_BOTH = 3  # Meta.MaximizeFlags.BOTH
 UT_TERM_DESKTOP = """[Desktop Entry]
 Type=Application
 Name=UT Term
@@ -412,6 +415,34 @@ def inner(mode: str, root: Path) -> None:
             call("gridKey", "z")
             call("waitIdle")
             result["after_sixteen_undo"] = call("state")
+
+            # All with one matching window: the single cell is the work area, which
+            # Tiling Assistant maximizes instead of tiling (gaps are off here).
+            open_window(SOLO, "ut-solo")
+            result["solo_identity"] = call("appIdentity", SOLO)
+            result["filter_solo"] = call("setWindowFilter", ["class:ut-solo"])
+            result["before_solo"] = call("state")
+            call("gridKey", "a")
+            result["solo_status"] = call("waitIdle")
+            result["after_solo"] = call("state")
+            call("gridKey", "z")
+            result["solo_undo_status"] = call("waitIdle")
+            result["after_solo_undo"] = call("state")
+
+            # Focus outside the filter: ut-A is focused but not a terminal, so it must
+            # not be raised back over the terminal grid; Undo refocuses it.
+            result["filter_focus_outside"] = call("setWindowFilter", ["terminals"])
+            result["focus_outside_focused"] = call("focus", "ut-A")
+            result["before_focus_outside"] = call("state")
+            call("gridKey", "a")
+            result["focus_outside_status"] = call("waitIdle")
+            result["after_focus_outside"] = call("state")
+            result["focus_outside_stacking"] = call("stacking")
+            call("gridKey", "z")
+            call("waitIdle")
+            result["after_focus_outside_undo"] = call("state")
+            result["focus_outside_undo_focus"] = call("stacking")["focus"]
+            result["filter_final"] = call("setWindowFilter", [])
     except Exception as exc:  # reported, then the outer run fails
         result["error"] = repr(exc)
     finally:
@@ -459,6 +490,14 @@ def grid_cells(wa, shape):
             x = wa["x"] + col * wa["width"] // columns
             cells.append(dict(x=x, y=y, width=wa["x"] + (col + 1) * wa["width"] // columns - x, height=height))
     return cells
+
+
+def overlaps(a, b, inset=TOLERANCE + 1):
+    """Whether frame `a` covers part of rect `b` shrunk by `inset` on every side,
+    so frames that meet `b` within TOLERANCE at a shared edge do not count."""
+    left, top = b["x"] + inset, b["y"] + inset
+    right, bottom = b["x"] + b["width"] - inset, b["y"] + b["height"] - inset
+    return a["x"] < right and a["x"] + a["width"] > left and a["y"] < bottom and a["y"] + a["height"] > top
 
 
 def grid_problems(wa, snapshot, count, label):
@@ -726,6 +765,64 @@ def check(runs):
     ]:
         if cols[before] != cols[after]:
             failures.append(f"{label}: state was not restored: before={cols[before]} after={cols[after]}")
+
+    # All with one matching window: maximized (natively, or to the work area with gaps).
+    identity = cols["solo_identity"]
+    if identity.get("wmClass") != "ut-solo" or identity.get("hasAppInfo"):
+        failures.append(f"{SOLO}: want WM class ut-solo and no desktop file (group class:ut-solo), got {identity}")
+    if cols["filter_solo"] != ["class:ut-solo"]:
+        failures.append(f"window-filter for All·1 is {cols['filter_solo']}, want ['class:ut-solo']")
+    old = {w["title"]: w for w in cols["before_solo"]}
+    new = {w["title"]: w for w in cols["after_solo"]}
+    undone = {w["title"]: w for w in cols["after_solo_undo"]}
+    solo, solo_before, solo_undone = new.get(SOLO), old.get(SOLO), undone.get(SOLO)
+    if solo is None or solo_before is None or solo_undone is None:
+        failures.append(f"All·1: {SOLO} missing before={solo_before} after={solo} after undo={solo_undone}")
+    else:
+        native = solo["maximized"] == MAXIMIZED_BOTH and same(solo["frame"], wa)
+        frame = solo["frame"]
+        gapped = solo["tiled"] == wa and frame["x"] >= wa["x"] and frame["y"] >= wa["y"] and \
+            frame["x"] + frame["width"] <= wa["x"] + wa["width"] and frame["y"] + frame["height"] <= wa["y"] + wa["height"]
+        if not (native or gapped):
+            failures.append(f"Super+Alt+A with only {SOLO} matching: want it maximized (maximized={MAXIMIZED_BOTH}, "
+                            f"frame {wa}) or gap-maximized (tiled {wa}, frame inside it); got {solo}; "
+                            f"status {cols['solo_status']}")
+        if not cols["solo_status"]["canUndo"]:
+            failures.append(f"Super+Alt+A with only {SOLO} matching left no Undo entry, so the arrangement failed "
+                            f"or was rolled back: {cols['solo_status']}")
+        if solo_undone["maximized"] or solo_undone["tiled"] or not same(solo_undone["frame"], solo_before["frame"]):
+            failures.append(f"Super+Alt+Z after All·1: want {SOLO} un-maximized and untiled at {solo_before['frame']} "
+                            f"(before: {solo_before}); got {solo_undone}; status {cols['solo_undo_status']}")
+    for snapshot, label in [(new, "Super+Alt+A All·1"), (undone, "Super+Alt+Z after All·1")]:
+        for title in sorted((set(old) | set(snapshot)) - {SOLO}):
+            if old.get(title) != snapshot.get(title):
+                failures.append(f"{label}: {title} is not in the filter but changed: {old.get(title)} -> {snapshot.get(title)}")
+
+    # Focus outside the filter: the grid of terminals stays on top.
+    if cols["filter_focus_outside"] != ["terminals"]:
+        failures.append(f"window-filter for the focus check is {cols['filter_focus_outside']}, want ['terminals']")
+    if cols["focus_outside_focused"] != "ut-A":
+        failures.append(f"focus check needs ut-A focused before Super+Alt+A; focus was {cols['focus_outside_focused']}")
+    failures += layout_problems(wa, cols["before_focus_outside"], cols["after_focus_outside"], TERMINALS, [3],
+                                "Super+Alt+A (Terminals) with ut-A focused")
+    stack = cols["focus_outside_stacking"]
+    if stack["focus"] not in TERMINALS:
+        failures.append(f"after Super+Alt+A (Terminals) with ut-A focused, focus is {stack['focus']}; "
+                        f"want one of {TERMINALS}, the focused window being outside the filter")
+    order = [w["title"] for w in stack["windows"]]
+    for index, cell in enumerate(grid_cells(wa, [3])):
+        top = next((w for w in stack["windows"] if overlaps(w["frame"], cell)), None)
+        if top is None or top["title"] not in TERMINALS:
+            failures.append(f"terminal cell {index + 1} {cell}: topmost window is {top}, want one of {TERMINALS}; "
+                            f"stacking top-down {order}")
+    if cols["before_focus_outside"] != cols["after_focus_outside_undo"]:
+        failures.append(f"Super+Alt+Z after the focus check: state was not restored: "
+                        f"before={cols['before_focus_outside']} after={cols['after_focus_outside_undo']}")
+    if cols["focus_outside_undo_focus"] != "ut-A":
+        failures.append(f"Super+Alt+Z after the focus check focused {cols['focus_outside_undo_focus']}, want ut-A "
+                        "(Undo returns focus to the window focused before the arrangement)")
+    if cols["filter_final"] != []:
+        failures.append(f"window-filter reset at the end left {cols['filter_final']}")
     return failures + log_problems(runs)
 
 

@@ -477,6 +477,21 @@ export async function cancelDuringNativePreparation(title) {
     return {result, waiters: controls._waiters.size, status: gridStatus(), before, after: state()};
 }
 
+/**
+ * Focus and stacking for the visible ut- windows on the active workspace:
+ * `windows` runs from the topmost window down, in Mutter's stacking order.
+ */
+export function stacking() {
+    const workspace = global.workspace_manager.get_active_workspace();
+    const visible = global.display.list_all_windows().filter(w => w.get_title()?.startsWith('ut-') &&
+        !w.minimized && w.located_on_workspace(workspace));
+    return {
+        focus: global.display.focus_window?.get_title() ?? null,
+        windows: global.display.sort_windows_by_stacking(visible).reverse()
+            .map(w => ({title: w.get_title(), frame: plain(w.get_frame_rect())})),
+    };
+}
+
 export function state() {
     return global.display.list_all_windows()
         .filter(w => w.get_title()?.startsWith('ut-'))
