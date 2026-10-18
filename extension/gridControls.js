@@ -11,16 +11,88 @@ import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import {GridController} from './gridController.js';
-import {copyRect, eligibleWindows} from './grids.js';
+import {FIT, LAYOUTS, MAX_WINDOWS, copyRect, eligibleWindows, gridShape} from './grids.js';
+import {classifyWindow, defaultLabel, describeFilter, summarizeGroups, toggleGroup, windowMatcher} from './windowGroups.js';
 import {sameRect} from './columns.js';
 
-const BINDINGS = ['show-grid-picker', 'arrange-six-windows', 'arrange-eight-windows', 'undo-grid-layout'];
+const LAYOUT_BINDINGS = [
+    [FIT, 'arrange-all-windows'], [4, 'arrange-four-windows'], [6, 'arrange-six-windows'],
+    [8, 'arrange-eight-windows'], [9, 'arrange-nine-windows'], [10, 'arrange-ten-windows'],
+    [12, 'arrange-twelve-windows'], [16, 'arrange-sixteen-windows'],
+];
+const FILTER_KEY = 'window-filter';
+const FIT_INSTRUCTION = 'All sizes the grid to the matching windows. Pick a numbered layout to place one window.';
 
 function label(text, styleClass, wrap = false) {
     const actor = new St.Label({text, style_class: styleClass, x_expand: true});
     actor.clutter_text.ellipsize = wrap ? Pango.EllipsizeMode.NONE : Pango.EllipsizeMode.END;
     actor.clutter_text.line_wrap = wrap;
     return actor;
+}
+
+function section(...children) {
+    const box = new St.BoxLayout({vertical: true, style_class: 'tiling-grid-section', x_expand: true});
+    for (const child of children)
+        box.add_child(child);
+    return box;
+}
+
+function plural(count, word) {
+    return `${count} ${count === 1 ? word : `${word}s`}`;
+}
+
+function setSensitive(button, sensitive) {
+    button.reactive = sensitive;
+    button.can_focus = sensitive;
+    if (sensitive)
+        button.remove_style_pseudo_class('insensitive');
+    else
+        button.add_style_pseudo_class('insensitive');
+}
+
+/** `3×2` for uniform rows; `6+5` when the last rows hold one window fewer. */
+function shapeText(rows) {
+    return rows.every(columns => columns === rows[0]) ? `${rows[0]}×${rows.length}` : rows.join('+');
+}
+
+function shapeName(rows) {
+    return rows.every(columns => columns === rows[0])
+        ? `${plural(rows[0], 'column')} and ${plural(rows.length, 'row')}`
+        : `rows of ${rows.join(', ')}`;
+}
+
+/** Windows per row; none when nothing matches the All layout or the work area is unusable. */
+function layoutShape(layout, matching, workArea) {
+    const count = layout === FIT ? Math.min(matching, MAX_WINDOWS) : layout;
+    if (!count)
+        return [];
+    try {
+        return gridShape(count, workArea, {ragged: layout === FIT});
+    } catch {
+        return [];
+    }
+}
+
+/** Program type of a window. Never throws, so chip counts and matching agree. */
+function groupFor(window) {
+    try {
+        const app = Shell.WindowTracker.get_default().get_window_app(window);
+        const info = app?.get_app_info() ?? null;
+        return classifyWindow({
+            appId: app?.get_id() ?? null,
+            appName: app?.get_name() ?? null,
+            hasAppInfo: Boolean(info),
+            categories: info?.get_categories()?.split(';') ?? [],
+            wmClass: window.get_wm_class(),
+        });
+    } catch {
+        return {id: 'other', label: 'Other windows'};
+    }
+}
+
+function labelFor(id) {
+    const name = id.startsWith('app:') ? Shell.AppSystem.get_default().lookup_app(id.slice(4))?.get_name() : null;
+    return name || defaultLabel(id);
 }
 
 const GridDialog = GObject.registerClass(
@@ -30,34 +102,57 @@ class GridDialog extends ModalDialog.ModalDialog {
         this._controls = controls;
         this._context = context;
         this._count = controls.lastCount;
+        this._selected = controls.filter;
         this._accepting = true;
         this.accessible_name = 'Window layouts';
         this.connect('destroy', () => this.popModal());
 
         this.contentLayout.add_child(label('WINDOW LAYOUTS', 'tiling-grid-eyebrow'));
         this.contentLayout.add_child(label('Make room for more', 'tiling-grid-title'));
-        this.contentLayout.add_child(label('Six or eight windows, neatly on this screen.', 'tiling-grid-subtitle'));
+        this.contentLayout.add_child(label('Pick which programs and how many windows.', 'tiling-grid-subtitle'));
 
-        const selectors = new St.BoxLayout({style_class: 'tiling-grid-selectors', x_expand: true});
+        // Chips are created once and then only relabelled, so toggling one
+        // never moves key focus or reflows the row under the pointer.
+        this._chipBox = new St.Widget({
+            style_class: 'tiling-grid-chips', x_expand: true,
+            layout_manager: new Clutter.FlowLayout({
+                orientation: Clutter.Orientation.HORIZONTAL, column_spacing: 6, row_spacing: 6,
+            }),
+        });
+        this._chips = new Map();
+        this._allChip = this._addChip(() => this._setFilter([]));
+        this._allChip.label = 'All windows';
+        this._allChip.accessible_name = 'All windows';
+        this.contentLayout.add_child(section(
+            label('PROGRAMS', 'tiling-grid-eyebrow'), this._chipBox,
+            label('Your choice also applies to the Super+Alt shortcuts.', 'tiling-grid-hint', true)));
+
+        const selectors = new St.BoxLayout({vertical: true, style_class: 'tiling-grid-selectors', x_expand: true});
         this._selectors = new Map();
-        for (const count of [6, 8]) {
-            const button = new St.Button({
-                style_class: 'tiling-grid-selector', can_focus: true, reactive: true,
-                x_expand: true, label: `${count} windows  ·  ${count / 2} × 2`,
-                accessible_name: `${count} windows, ${count / 2} columns and two rows`,
-            });
-            button.connect('clicked', () => this._selectLayout(count));
-            selectors.add_child(button);
-            this._selectors.set(count, button);
+        const layouts = [FIT, ...LAYOUTS];
+        for (let start = 0; start < layouts.length; start += 4) {
+            const row = new St.BoxLayout({style_class: 'tiling-grid-selector-row', x_expand: true});
+            row.layout_manager.homogeneous = true;
+            for (const layout of layouts.slice(start, start + 4)) {
+                const button = new St.Button({style_class: 'tiling-grid-selector', can_focus: true, reactive: true, x_expand: true});
+                if (layout !== FIT) {
+                    const shape = layoutShape(layout, 0, context.workArea);
+                    button.label = shape.length ? `${layout} · ${shapeText(shape)}` : `${layout}`;
+                    button.accessible_name = shape.length ? `${layout} windows, ${shapeName(shape)}` : `${layout} windows`;
+                }
+                button.connect('clicked', () => this._selectLayout(layout));
+                row.add_child(button);
+                this._selectors.set(layout, button);
+            }
+            selectors.add_child(row);
         }
-        this.contentLayout.add_child(selectors);
+        this.contentLayout.add_child(section(label('LAYOUT', 'tiling-grid-eyebrow'), selectors));
 
         const windowName = context.focusWindow?.get_title() || 'No window selected';
         this._windowLabel = label(windowName, 'tiling-grid-window-title');
-        this.contentLayout.add_child(this._windowLabel);
-        this.contentLayout.add_child(label('Click a tile, or press its number, to place this window.', 'tiling-grid-instruction', true));
+        this._instruction = label('', 'tiling-grid-instruction', true);
         this._grid = new St.BoxLayout({vertical: true, style_class: 'tiling-grid-preview'});
-        this.contentLayout.add_child(this._grid);
+        this.contentLayout.add_child(section(this._windowLabel, this._instruction, this._grid));
         this._summary = label('', 'tiling-grid-summary', true);
         this.contentLayout.add_child(this._summary);
 
@@ -79,7 +174,11 @@ class GridDialog extends ModalDialog.ModalDialog {
         this.addButton({label: 'Cancel', key: Clutter.KEY_Escape, action: () => this.close()});
         this._arrangeButton = this.addButton({
             label: 'Arrange windows',
-            action: () => this._accept(() => controls.arrange(this._count, context)),
+            action: () => this._accept(() => {
+                // The only place the filter is saved; Cancel and chip toggles never write it.
+                controls.filter = this._selected;
+                controls.arrange(this._count, context, this._selected);
+            }),
         });
         this._arrangeButton.add_style_pseudo_class('default');
         this._selectLayout(this._count);
@@ -91,11 +190,13 @@ class GridDialog extends ModalDialog.ModalDialog {
             const forbidden = Clutter.ModifierType.CONTROL_MASK | Clutter.ModifierType.MOD1_MASK | Clutter.ModifierType.SUPER_MASK;
             if (event.get_state() & forbidden)
                 return Clutter.EVENT_PROPAGATE;
-            const digit = symbol >= Clutter.KEY_1 && symbol <= Clutter.KEY_8
+            const digit = symbol >= Clutter.KEY_1 && symbol <= Clutter.KEY_9
                 ? symbol - Clutter.KEY_1
-                : symbol >= Clutter.KEY_KP_1 && symbol <= Clutter.KEY_KP_8 ? symbol - Clutter.KEY_KP_1 : -1;
-            if (digit >= 0 && digit < this._count && this._canPlace) {
-                this._accept(() => controls.place(this._count, digit, context));
+                : symbol >= Clutter.KEY_KP_1 && symbol <= Clutter.KEY_KP_9 ? symbol - Clutter.KEY_KP_1 : -1;
+            // _canPlace is false for the All layout, so _count is a number here.
+            if (digit >= 0 && this._canPlace && digit < this._count) {
+                const count = this._count;
+                this._accept(() => controls.place(count, digit, context));
                 return Clutter.EVENT_STOP;
             }
             return Clutter.EVENT_PROPAGATE;
@@ -107,46 +208,103 @@ class GridDialog extends ModalDialog.ModalDialog {
         this._monitorConstraint.index = this._context.monitor;
     }
 
-    _selectLayout(count) {
-        this._count = count;
-        this._controls.lastCount = count;
-        for (const [value, button] of this._selectors) {
-            if (value === count)
+    _addChip(onClicked) {
+        const chip = new St.Button({style_class: 'tiling-grid-chip', toggle_mode: true, can_focus: true, reactive: true});
+        chip.connect('clicked', onClicked);
+        this._chipBox.add_child(chip);
+        return chip;
+    }
+
+    _setFilter(selected) {
+        this._selected = selected;
+        this._render();
+    }
+
+    _selectLayout(layout) {
+        this._count = layout;
+        this._controls.lastCount = layout;
+        this._render();
+    }
+
+    _render() {
+        const {workArea, focusWindow} = this._context;
+        const eligible = eligibleWindows(this._context.windows, this._context, Meta.WindowType.NORMAL);
+        const matching = eligible.filter(windowMatcher(this._selected, groupFor)).length;
+        const filterLabel = describeFilter(this._selected, labelFor);
+
+        // A deselected group without windows keeps its chip, at count 0,
+        // until the picker closes so it can be selected again.
+        for (const chip of this._chips.values())
+            chip.count = 0;
+        for (const group of summarizeGroups(eligible, groupFor, this._selected, labelFor)) {
+            if (!this._chips.has(group.id)) {
+                const {id} = group;
+                this._chips.set(id, {id, text: group.label, button: this._addChip(() => this._setFilter(toggleGroup(this._selected, id)))});
+            }
+            this._chips.get(group.id).count = group.count;
+        }
+        for (const {id, text, count, button} of this._chips.values()) {
+            button.label = `${text}  ${count}`;
+            button.accessible_name = `${text}, ${plural(count, 'window')}`;
+            button.checked = this._selected.includes(id);
+        }
+        this._allChip.checked = !this._selected.length;
+
+        const fitCount = Math.min(matching, MAX_WINDOWS);
+        const fitButton = this._selectors.get(FIT);
+        fitButton.label = `All · ${fitCount}`;
+        fitButton.accessible_name = `All matching windows, ${plural(fitCount, 'window')}`;
+        for (const [layout, button] of this._selectors) {
+            if (layout === this._count)
                 button.add_style_pseudo_class('checked');
             else
                 button.remove_style_pseudo_class('checked');
         }
+
+        const layout = this._count;
+        const fit = layout === FIT;
+        const rows = layoutShape(layout, matching, workArea);
+        const count = rows.reduce((sum, columns) => sum + columns, 0);
+        this._canPlace = !fit && count > 0 && eligible.includes(focusWindow);
+        this._instruction.text = fit ? FIT_INSTRUCTION
+            : count > 9 ? 'Click a tile, or press 1–9 for the first nine, to place this window.'
+                : 'Click a tile, or press its number, to place this window.';
+        // Rebuilding the tiles would otherwise drop key focus to the stage.
+        const focus = global.stage.get_key_focus();
+        const tileFocused = Boolean(focus && this._grid.contains(focus));
         this._grid.destroy_all_children();
-        const candidates = eligibleWindows(this._context.windows, this._context, Meta.WindowType.NORMAL);
-        this._canPlace = candidates.includes(this._context.focusWindow);
-        const columns = count / 2;
-        for (let row = 0; row < 2; row++) {
+        this._grid.visible = rows.length > 0;
+        const size = rows.length <= 2 ? '' : rows.length === 3 ? ' tiling-grid-cell-medium' : ' tiling-grid-cell-small';
+        let index = 0;
+        rows.forEach((columns, row) => {
             const rowActor = new St.BoxLayout({style_class: 'tiling-grid-row', x_expand: true});
+            // Equal widths within a row, whatever the digits in each label.
+            rowActor.layout_manager.homogeneous = true;
             for (let column = 0; column < columns; column++) {
-                const index = row * columns + column;
+                const cell = index++;
+                const where = `tile ${cell + 1}, row ${row + 1} of ${rows.length}, column ${column + 1}`;
                 const tile = new St.Button({
-                    style_class: 'tiling-grid-cell', label: `${index + 1}`,
+                    style_class: `tiling-grid-cell${size}`, label: `${cell + 1}`,
                     reactive: this._canPlace, can_focus: this._canPlace, x_expand: true,
-                    accessible_name: `Place selected window in tile ${index + 1}, ${row === 0 ? 'top' : 'bottom'} row, column ${column + 1}`,
+                    accessible_name: this._canPlace ? `Place selected window in ${where}` : `Preview of ${where}`,
                 });
                 if (!this._canPlace)
                     tile.add_style_pseudo_class('insensitive');
-                tile.connect('clicked', () => this._accept(() => this._controls.place(count, index, this._context)));
+                tile.connect('clicked', () => this._accept(() => this._controls.place(layout, cell, this._context)));
                 rowActor.add_child(tile);
             }
             this._grid.add_child(rowActor);
-        }
-        const total = candidates.length;
-        const overflow = Math.max(0, total - count);
-        this._summary.text = total
-            ? `Arrange ${Math.min(total, count)} ${Math.min(total, count) === 1 ? 'window' : 'windows'} on this monitor and workspace.${overflow ? ` ${overflow} less-recent ${overflow === 1 ? 'window stays' : 'windows stay'} in place.` : ''}`
-            : 'No resizable windows on this monitor and workspace.';
-        this._arrangeButton.reactive = total > 0;
-        this._arrangeButton.can_focus = total > 0;
-        if (!total)
-            this._arrangeButton.add_style_pseudo_class('insensitive');
-        else
-            this._arrangeButton.remove_style_pseudo_class('insensitive');
+        });
+        if (tileFocused)
+            this._selectors.get(layout).grab_key_focus();
+
+        const arranged = Math.min(matching, fit ? fitCount : layout);
+        const overflow = matching - arranged;
+        const scope = filterLabel ? ` (${filterLabel})` : '';
+        this._summary.text = matching
+            ? `Arrange ${plural(arranged, 'window')}${scope} on this monitor and workspace.${overflow ? ` ${overflow} less-recent ${overflow === 1 ? 'window stays' : 'windows stay'} in place.` : ''}`
+            : `No ${filterLabel ? `${filterLabel} ` : 'resizable '}windows on this monitor and workspace.`;
+        setSensitive(this._arrangeButton, matching > 0);
     }
 
     _accept(action) {
@@ -165,6 +323,7 @@ export class GridControls {
         this._destroyed = false;
         this._waiters = new Map();
         this._registeredBindings = [];
+        // A LAYOUTS count or FIT; in memory only, so a reload starts at six.
         this.lastCount = 6;
 
         const alive = window => Boolean(window && global.get_window_actors().some(actor => actor.meta_window === window));
@@ -303,7 +462,7 @@ export class GridControls {
 
         try {
             this._panel = new PanelMenu.Button(0.0, 'Window layouts', true);
-            this._panel.accessible_name = 'Window layouts — six or eight windows';
+            this._panel.accessible_name = 'Window layouts — 4 to 16 windows';
             this._panel.add_child(new St.Icon({icon_name: 'view-grid-symbolic', style_class: 'system-status-icon'}));
             this._panel.connect('button-press-event', () => {
                 this.openPicker();
@@ -317,12 +476,17 @@ export class GridControls {
                 return Clutter.EVENT_PROPAGATE;
             });
             Main.panel.addToStatusArea('tiling-columns-grid', this._panel);
-            const actions = [() => this.openPicker(), () => this.arrange(6), () => this.arrange(8), () => this.undo()];
-            const settings = extension.getSettings();
-            BINDINGS.forEach((name, index) => {
-                Main.wm.addKeybinding(name, settings, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT, Shell.ActionMode.NORMAL, actions[index]);
+            this._settings = extension.getSettings();
+            // Every arrange shortcut applies the filter last saved by the picker.
+            const bindings = [
+                ['show-grid-picker', () => this.openPicker()],
+                ...LAYOUT_BINDINGS.map(([layout, name]) => [name, () => this.arrange(layout)]),
+                ['undo-grid-layout', () => this.undo()],
+            ];
+            for (const [name, action] of bindings) {
+                Main.wm.addKeybinding(name, this._settings, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT, Shell.ActionMode.NORMAL, action);
                 this._registeredBindings.push(name);
-            });
+            }
         } catch (error) {
             this.destroy();
             throw error;
@@ -375,12 +539,26 @@ export class GridControls {
         }
     }
 
-    async arrange(count, context) {
-        this.lastCount = count;
-        const result = await this.controller.arrange(count, context);
+    /** Program-type group ids saved by the picker's Arrange; empty means all windows. */
+    get filter() {
+        return this._settings.get_strv(FILTER_KEY);
+    }
+
+    set filter(selected) {
+        this._settings.set_strv(FILTER_KEY, selected);
+    }
+
+    /** `layout` is a LAYOUTS count or FIT; `selected` narrows it to program types. */
+    async arrange(layout, context, selected = this.filter) {
+        this.lastCount = layout;
+        const result = await this.controller.arrange(layout, context, {
+            matches: windowMatcher(selected, groupFor),
+            label: describeFilter(selected, labelFor),
+        });
         if (result.ok && !this._destroyed) {
+            const scope = result.label ? ` (${result.label})` : '';
             const extra = result.overflow ? ` ${result.overflow} less-recent ${result.overflow === 1 ? 'window was' : 'windows were'} left in place.` : '';
-            Main.notify('Window layouts', `Arranged ${result.moved} ${result.moved === 1 ? 'window' : 'windows'}.${extra} Super+Alt+Z to undo.`);
+            Main.notify('Window layouts', `Arranged ${plural(result.moved, 'window')}${scope}.${extra} Super+Alt+Z to undo.`);
         }
         return result;
     }
@@ -405,6 +583,7 @@ export class GridControls {
         for (const name of this._registeredBindings)
             Main.wm.removeKeybinding(name);
         this._registeredBindings = [];
+        this._settings = null;
         this._panel?.destroy();
         this._panel = null;
     }

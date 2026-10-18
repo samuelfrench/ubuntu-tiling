@@ -1,11 +1,11 @@
 {
   "uuid": "tiling-columns@samuelfrench.github.io",
   "name": "Tiling Assistant Columns & Grids",
-  "description": "Arrange six or eight windows with a native layout picker, shortcuts and undo. Adds columns with Super+Left/Right or edge dragging. Requires Tiling Assistant.",
+  "description": "Arrange 4 to 16 windows, or every window of the program types you pick, with a native picker, shortcuts and undo. Adds columns with Super+Left/Right or edge dragging. Requires Tiling Assistant.",
   "shell-version": [
     "46"
   ],
   "url": "https://github.com/samuelfrench/ubuntu-tiling",
-  "version": 2,
+  "version": 3,
   "settings-schema": "org.gnome.shell.extensions.tiling-columns"
 }
