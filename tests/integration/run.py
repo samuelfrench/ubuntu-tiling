@@ -388,12 +388,12 @@ def inner(mode: str, root: Path) -> None:
             call("waitIdle")
             result["after_all_shortcut_undo"] = call("state")
 
-            # Picker: All windows chip + 12, then Cancel (Escape): the saved filter stays.
+            # Picker: All windows chip + 12, then the Cancel button: the saved filter stays.
             result["twelve_picker_open"] = call("gridKey", "Space")
             result["twelve_all_windows_chip"] = call("pickerChip", "All windows")
             result["twelve_layout"] = call("pickerLayout", 12, True)
             result["screenshot_twelve"] = call("pickerScreenshot", str(root / "picker-twelve.png"))
-            result["twelve_cancel_status"] = call("gridKey", "Escape", False)
+            result["twelve_cancel_status"] = call("pickerButton", "Cancel")
             result["after_twelve_cancel"] = call("state")
             result["filter_after_twelve_cancel"] = call("windowFilter")
 
@@ -708,31 +708,57 @@ def check(runs):
     if reenabled["state"] != ACTIVE or not reenabled["controls"]:
         failures.append(f"re-enabling tiling-columns for the filter steps failed: {reenabled}")
     for identity in cols["terminal_identity"]:
-        if identity.get("wmClass") != "ut-term" or identity.get("appId") != "ut-term.desktop":
-            failures.append(f"{identity['title']}: want WM class ut-term mapped to ut-term.desktop, got {identity}")
+        if identity.get("wmClass") != "ut-term" or identity.get("appId") != "ut-term.desktop" or \
+                "TerminalEmulator" not in (identity.get("categories") or "").split(";"):
+            failures.append(f"{identity['title']}: want WM class ut-term mapped to ut-term.desktop with category "
+                            f"TerminalEmulator, got {identity}")
     if cols["filter_initial"] != []:
         failures.append(f"window-filter was {cols['filter_initial']} before the picker steps; want [] "
                         "(clicking Terminals would otherwise deselect it)")
-    clicks = [("terminals_chip", "Terminals chip"), ("terminals_all_layout", "All layout"),
-              ("terminals_arrange", "Arrange windows"), ("twelve_all_windows_chip", "All windows chip"),
-              ("twelve_layout", "12 layout")]
-    for key, what in clicks:
-        if cols[key]["click"]["method"] not in ("pointer", "emit"):
-            failures.append(f"picker {what} was not clicked: {cols[key]['click']}")
+    # The chip and Arrange clicks must be real pointer clicks: an `emit` fallback means the
+    # pointer could not reach them, which a user could not do either.
+    clicks = [("terminals_chip", "Terminals chip", True), ("terminals_all_layout", "All layout", False),
+              ("terminals_arrange", "Arrange windows", True), ("twelve_all_windows_chip", "All windows chip", True),
+              ("twelve_layout", "12 layout", False), ("twelve_cancel_status", "Cancel", False)]
+    for key, what, pointer_only in clicks:
+        click = cols[key]["click"]
+        if click["method"] not in (("pointer",) if pointer_only else ("pointer", "emit")):
+            failures.append(f"picker {what} was not clicked with the pointer: {click}" if click["method"] == "emit"
+                            else f"picker {what} was not clicked: {click}")
     dialog = cols["terminals_all_layout"]["dialog"] or {}
     if not (dialog.get("selected") == ["terminals"] and dialog.get("count") == "all" and
             dialog.get("rows") == [3] and dialog.get("title") == "ut-T1" and dialog.get("arrangeReactive")):
         failures.append(f"picker Terminals + All: want Terminals selected, All layout, one preview row of 3, "
                         f"ut-T1 selected and Arrange sensitive; got {dialog}")
+    chips = dialog.get("chips") or []
+    terminals = next((chip for chip in chips if chip["id"] == "terminals"), None)
+    if not (terminals and terminals["count"] == 3 and terminals["checked"]):
+        failures.append(f"picker Terminals + All: want a checked Terminals chip counting 3 windows; chips {chips}")
+    if dialog.get("fit") != "All \u00b7 3":
+        failures.append(f"picker Terminals + All: All selector reads {dialog.get('fit')!r}, want 'All \u00b7 3'")
+    if "Arrange 3 windows (Terminals)" not in (dialog.get("summary") or ""):
+        failures.append(f"picker Terminals + All: summary {dialog.get('summary')!r} lacks 'Arrange 3 windows (Terminals)'")
     dialog = cols["twelve_layout"]["dialog"] or {}
     if not (dialog.get("selected") == [] and dialog.get("count") == 12 and dialog.get("rows") == [6, 6] and
             dialog.get("cells") == [str(i + 1) for i in range(12)]):
         failures.append(f"picker All windows + 12: want no filter and a 6×2 preview numbered 1-12; got {dialog}")
+    chips = dialog.get("chips") or []
+    if not any(chip["id"] is None and chip["label"] == "All windows" and chip["checked"] for chip in chips):
+        failures.append(f"picker All windows + 12: want the All windows chip checked; chips {chips}")
     for key in ["screenshot_all_terminals", "screenshot_twelve"]:
         shot = cols[key]
-        if shot["clipped"] or shot["width"] >= WIDTH or shot["height"] >= HEIGHT:
-            failures.append(f"{key}: picker dialog bounds {shot} do not fit inside the {WIDTH}×{HEIGHT} monitor "
-                            "(clipped, or the allocation was stale when read)")
+        bounds = {k: shot[k] for k in ("x", "y", "width", "height")}
+        if shot["actor"] == "dialogLayout":
+            failures.append(f"{key}: measured ModalDialog.dialogLayout, which fills the monitor; the visible "
+                            f"Dialog._dialog box was not found: {shot}")
+        elif not shot["settled"]:
+            failures.append(f"{key}: picker box bounds were still changing after {shot['frames']} frames: {shot}")
+        elif shot["width"] >= WIDTH or shot["height"] >= HEIGHT:
+            failures.append(f"{key}: measured picker box {bounds} is as large as the {WIDTH}×{HEIGHT} monitor, "
+                            "so the harness read a container, not the visible dialog")
+        elif shot["clipped"]:
+            failures.append(f"{key}: picker dialog {bounds} does not fit inside the {WIDTH}×{HEIGHT} monitor; "
+                            "part of it is off screen")
     if cols["modal_after_terminals_arrange"]:
         failures.append("picker was still open after clicking Arrange windows")
     failures += layout_problems(wa, cols["before_terminals_picker"], cols["after_terminals_picker"], TERMINALS, [3],
@@ -743,7 +769,7 @@ def check(runs):
                                 "Super+Alt+A with the saved Terminals filter")
     status = cols["twelve_cancel_status"]
     if status["modalCount"] or status["dialog"]:
-        failures.append(f"Escape did not close the picker: {status}")
+        failures.append(f"the Cancel button did not close the picker: {status}")
     if cols["filter_after_twelve_cancel"] != ["terminals"]:
         failures.append(f"picker Cancel changed window-filter to {cols['filter_after_twelve_cancel']}; Cancel must never write it")
     if cols["filter_after_reset"] != []:

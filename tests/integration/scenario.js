@@ -245,24 +245,76 @@ export async function windowAction(title, action) {
     return state();
 }
 
-/** Waits up to a second for a pending relayout, so transformed bounds are current. */
-async function allocated(actor) {
-    for (let i = 0; i < 20 && !actor.has_allocation(); i++)
-        await sleep(50);
+/**
+ * Resolves after the stage paints its next frame, or after `timeout` ms.
+ * Clutter lays out before it paints, so allocations are current afterwards.
+ */
+function nextFrame(timeout = 250) {
+    return new Promise(resolve => {
+        let signal = 0;
+        let timer = 0;
+        const finish = () => {
+            if (signal)
+                global.stage.disconnect(signal);
+            if (timer)
+                GLib.source_remove(timer);
+            signal = timer = 0;
+            resolve();
+        };
+        signal = global.stage.connect('after-paint', finish);
+        timer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeout, () => {
+            timer = 0;
+            finish();
+            return GLib.SOURCE_REMOVE;
+        });
+        global.stage.queue_redraw();
+    });
 }
 
 /**
- * Captures the dialog's area on the stage. `clipped` is true when part of the
- * dialog lies outside the stage (only the visible part is captured).
+ * Stage bounds once the actor has an allocation that is identical on two
+ * consecutive frames (at most 10). get_transformed_size() reports the
+ * preferred size while a relayout is pending, e.g. right after the picker
+ * rebuilds its preview, so a single read can be stale.
+ */
+async function settledBounds(actor) {
+    const read = () => {
+        const [x, y] = actor.get_transformed_position();
+        const [width, height] = actor.get_transformed_size();
+        return {x, y, width, height};
+    };
+    let previous = null;
+    for (let frame = 1; frame <= 10; frame++) {
+        await nextFrame();
+        const bounds = actor.has_allocation() ? read() : null;
+        if (bounds && previous && ['x', 'y', 'width', 'height'].every(k => bounds[k] === previous[k]))
+            return {...bounds, settled: true, frames: frame};
+        previous = bounds;
+    }
+    return {...previous ?? read(), settled: false, frames: 10};
+}
+
+/**
+ * The visible picker box. In GNOME 46 `ModalDialog.dialogLayout` is a
+ * `Dialog` St.Widget that fills the monitor-sized background stack; the
+ * dialog the user sees is its child `_dialog` (St.BoxLayout `modal-dialog`,
+ * centered at its natural size).
+ */
+function pickerBox(dialog) {
+    return dialog.dialogLayout._dialog ?? dialog.dialogLayout;
+}
+
+/**
+ * Captures the visible dialog box. `clipped` is true when part of it lies
+ * outside the stage (only the on-stage part is captured); `settled` is false
+ * when its bounds kept changing for 10 frames.
  */
 export async function pickerScreenshot(path) {
     const dialog = Main.extensionManager.lookup(COLUMNS)?.stateObj?._gridControls?._dialog;
     if (!dialog)
         throw new Error('Picker is not open');
-    const actor = dialog.dialogLayout;
-    await allocated(actor);
-    const [x, y] = actor.get_transformed_position();
-    const [width, height] = actor.get_transformed_size();
+    const actor = pickerBox(dialog);
+    const {x, y, width, height, settled, frames} = await settledBounds(actor);
     const area = [Math.floor(x), Math.floor(y), Math.ceil(width), Math.ceil(height)];
     const left = Math.max(0, area[0]);
     const top = Math.max(0, area[1]);
@@ -272,7 +324,10 @@ export async function pickerScreenshot(path) {
     const stream = Gio.File.new_for_path(path).replace(null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
     await new Shell.Screenshot().screenshot_area(left, top, right - left, bottom - top, stream);
     stream.close(null);
-    return {path, x, y, width, height, clipped};
+    return {
+        path, x, y, width, height, clipped, settled, frames,
+        actor: actor === dialog.dialogLayout ? 'dialogLayout' : actor.style_class,
+    };
 }
 
 /**
@@ -287,9 +342,7 @@ async function clickActor(actor, what) {
         return {method: 'none', reason: `no ${what}`};
     if (!actor.reactive)
         return {method: 'none', reason: `${what} is insensitive`};
-    await allocated(actor);
-    const [x, y] = actor.get_transformed_position();
-    const [width, height] = actor.get_transformed_size();
+    const {x, y, width, height} = await settledBounds(actor);
     const cx = Math.round(x + width / 2);
     const cy = Math.round(y + height / 2);
     const onStage = cx >= 0 && cy >= 0 && cx < global.stage.width && cy < global.stage.height;
@@ -384,9 +437,12 @@ export async function appIdentity(title) {
     };
 }
 
-/** A fresh Gio.Settings for the extension schema, independent of the controls' instance. */
+let columnsSettingsCache = null;
+
+/** One Gio.Settings for the extension schema, separate from the controls' own instance. */
 function columnsSettings() {
-    return Main.extensionManager.lookup(COLUMNS).stateObj.getSettings();
+    columnsSettingsCache ??= Main.extensionManager.lookup(COLUMNS).stateObj.getSettings();
+    return columnsSettingsCache;
 }
 
 /** The persisted program-type filter (`window-filter`). */
