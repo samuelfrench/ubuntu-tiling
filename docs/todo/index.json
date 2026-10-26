@@ -85,6 +85,23 @@
     "test": null
   },
   {
+    "path": "docs/todo/product/flow-layout-zero-height.md",
+    "slug": "flow-layout-zero-height",
+    "title": "Prepare an upstream report for zero-height FlowLayout children",
+    "status": "idea",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-26",
+    "owner": "agent",
+    "brief": "GNOME 50.1 gives 28px-natural-height chips 0px allocation; local allocation workaround under verification",
+    "refs": [
+      "extension/gridControls.js",
+      "tests/integration/scenario.js",
+      "docs/todo/product/gnome-50-upgrade.md"
+    ],
+    "test": null
+  },
+  {
     "path": "docs/todo/product/gnome-50-upgrade.md",
     "slug": "gnome-50-upgrade",
     "title": "Restore the layouts tray after the Ubuntu upgrade",
