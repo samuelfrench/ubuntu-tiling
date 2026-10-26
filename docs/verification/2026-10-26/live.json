@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-10-26T21:57:57.680013+00:00",
+  "runtimeRevision": "80e3a0e56fdeec49b263c539e8907f0380de9136",
+  "installedFilesMatch": 11,
+  "extensionInfo": "tiling-columns@samuelfrench.github.io\n  Name: Tiling Assistant Columns & Grids\n  Description: Arrange 4 to 16 windows, or every window of the program types you pick, with a native picker, shortcuts and undo. Adds columns with Super+Left/Right or edge dragging. Requires Tiling Assistant.\n  Path: /home/sam/.local/share/gnome-shell/extensions/tiling-columns@samuelfrench.github.io\n  URL: https://github.com/samuelfrench/ubuntu-tiling\n  Version: 4\n  Enabled: Yes\n  State: ACTIVE\n",
+  "tilingAssistantInfo": "tiling-assistant@ubuntu.com\n  Name: Ubuntu Tiling Assistant\n  Description: Expand GNOME's 2 column tiling and add a Windows-snap-assist-inspired popup...\n  Path: /usr/share/gnome-shell/extensions/tiling-assistant@ubuntu.com\n  URL: https://launchpad.net/ubuntu/+source/gnome-shell-extension-tiling-assistant\n  Version: 54\n  Enabled: Yes\n  State: ACTIVE\n",
+  "shellPid": 10586,
+  "disableExtensionVersionValidation": "false",
+  "userConfirmedTray": true,
+  "observations": [
+    {
+      "panel": {
+        "name": "Window layouts \u2014 4 to 16 windows",
+        "bounds": [
+          4820,
+          0,
+          60,
+          32
+        ]
+      },
+      "pickerLabels": []
+    }
+  ],
+  "extensionErrors": [],
+  "manualPickerCheck": "Requested; bounded read-only observation did not capture an open picker"
+}

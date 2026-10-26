@@ -110,7 +110,7 @@
     "due": null,
     "updated": "2026-10-26",
     "owner": "sam",
-    "brief": "v4 installed and verified; manual activation pending after Sam disabled Alt+F2; stop automated input",
+    "brief": "v4 ACTIVE and tray visible after manual activation; final read-only picker check pending",
     "refs": [
       "extension/metadata.json",
       "extension/gridControls.js",
@@ -127,7 +127,7 @@
     "due": null,
     "updated": "2026-10-26",
     "owner": "sam",
-    "brief": "v4 upgrade repair installed; waiting for Looking Glass to activate and verify the live layouts picker",
+    "brief": "v4 active and tray confirmed visible; waiting only for manual picker confirmation",
     "refs": [
       "docs/superpowers/plans/2026-10-18-more-layouts-and-app-filters.md",
       "docs/verification/2026-10-18/README.md",
