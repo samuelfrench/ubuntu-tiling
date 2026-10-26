@@ -7,6 +7,7 @@ import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {maximizedFlags, maximizeWindow, unmaximizeWindow} from '../../extension/windowState.js';
 
 let keyboard = null;
 let pointer = null;
@@ -44,7 +45,7 @@ function workArea() {
 
 const TILING_ASSISTANT = 'tiling-assistant@ubuntu.com';
 const COLUMNS = 'tiling-columns@samuelfrench.github.io';
-const SETTLED = [1, 3, 4]; // ExtensionState ACTIVE, ERROR, OUT_OF_DATE (GNOME 46)
+const SETTLED = [1, 3, 4]; // ExtensionState ACTIVE, ERROR, OUT_OF_DATE (GNOME 46/50)
 
 /**
  * Waits until startup is over (extensions loaded, panel struts applied), hides
@@ -230,8 +231,8 @@ export async function panelClick() {
 
 export async function windowAction(title, action) {
     const window = windowByTitle(title);
-    if (action === 'maximize') window.maximize(Meta.MaximizeFlags.BOTH);
-    else if (action === 'unmaximize') window.unmaximize(Meta.MaximizeFlags.BOTH);
+    if (action === 'maximize') maximizeWindow(window, Meta.MaximizeFlags.BOTH);
+    else if (action === 'unmaximize') unmaximizeWindow(window);
     else if (action === 'fullscreen') window.make_fullscreen();
     else if (action === 'unfullscreen') window.unmake_fullscreen();
     else if (action === 'minimize') window.minimize();
@@ -555,7 +556,7 @@ export function state() {
             title: w.get_title(),
             frame: plain(w.get_frame_rect()),
             tiled: w.tiledRect ? plain(w.tiledRect) : null,
-            maximized: w.get_maximized(), fullscreen: w.is_fullscreen(),
+            maximized: maximizedFlags(w), fullscreen: w.is_fullscreen(),
             minimized: w.minimized, workspace: w.get_workspace()?.index() ?? -1,
         }))
         .sort((a, b) => a.title.localeCompare(b.title));

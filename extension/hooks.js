@@ -1,4 +1,5 @@
 import {planColumnInsert, sameRect} from './columns.js';
+import {maximizedFlags} from './windowState.js';
 
 const SIDES = ['left', 'right'];
 
@@ -15,7 +16,7 @@ function canBeTiled(window) {
     if (window.is_skip_taskbar())
         return false;
 
-    if (window.get_maximized() || window.is_fullscreen())
+    if (maximizedFlags(window) || window.is_fullscreen())
         return true;
 
     return window.allows_move() && window.allows_resize();
@@ -34,21 +35,21 @@ function canBeTiled(window) {
  * @param {*} deps.Rect Tiling Assistant's Rect class.
  * @param {*} deps.Util Tiling Assistant's Util class (getFavoriteLayout).
  * @param {*} deps.Settings Tiling Assistant's Settings class (getBoolean).
- * @param {*} deps.Shortcuts Tiling Assistant's Shortcuts constants.
  * @param {() => *} deps.getFocusWindow returns the focused Meta.Window or null.
  * @returns {() => void} restores the original methods.
  */
-export function installHooks({Twm, Rect, Util, Settings, Shortcuts, getFocusWindow}) {
+export function installHooks({Twm, Rect, Util, Settings, getFocusWindow}) {
     const originalGetTileFor = Twm.getTileFor;
     const originalTile = Twm.tile;
 
     // Returns {slot, moves, previous} or null. `previous` holds the columns'
     // current rects so a failed insert can be undone.
     const planFor = (window, workArea, monitor, side) => {
-        if (Settings.getBoolean(Settings.DISABLE_TILE_GROUPS))
+        // The settings keys are stable; TA 54 removed the old JS constants.
+        if (Settings.getBoolean('disable-tile-groups'))
             return null;
 
-        if (Settings.getBoolean(Settings.ADAPT_EDGE_TILING_TO_FAVORITE_LAYOUT) &&
+        if (Settings.getBoolean('adapt-edge-tiling-to-favorite-layout') &&
             Util.getFavoriteLayout(monitor).length)
             return null;
 
@@ -83,7 +84,7 @@ export function installHooks({Twm, Rect, Util, Settings, Shortcuts, getFocusWind
 
     const getTileFor = function (shortcut, workArea, monitor = null) {
         const rect = originalGetTileFor.call(this, shortcut, workArea, monitor);
-        const side = {[Shortcuts.LEFT]: 'left', [Shortcuts.RIGHT]: 'right'}[shortcut];
+        const side = {'tile-left-half': 'left', 'tile-right-half': 'right'}[shortcut];
         if (!side)
             return rect;
 

@@ -3,6 +3,7 @@
   "name": "ubuntu-tiling test driver",
   "description": "Test-only. Enables org.gnome.Shell.Eval inside the isolated headless test shell. Never install in a real session.",
   "shell-version": [
-    "46"
+    "46",
+    "50"
   ]
 }

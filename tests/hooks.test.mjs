@@ -104,15 +104,17 @@ function setup({ topTileGroup, refuse = () => false, settings = {}, favorite = [
     };
     const originals = { getTileFor: Twm.getTileFor, tile: Twm.tile };
     const Settings = {
-        DISABLE_TILE_GROUPS: 'disable-tile-groups',
-        ADAPT_EDGE_TILING_TO_FAVORITE_LAYOUT: 'adapt-edge-tiling-to-favorite-layout',
-        getBoolean: key => Boolean(settings[key]),
+        getBoolean: key => {
+            assert.ok(['disable-tile-groups', 'adapt-edge-tiling-to-favorite-layout'].includes(key),
+                `Unknown settings key: ${key}`);
+            return Boolean(settings[key]);
+        },
     };
     const Shortcuts = { LEFT: 'tile-left-half', RIGHT: 'tile-right-half', TOP: 'tile-top-half' };
     const Util = { getFavoriteLayout: () => favorite };
     const focus = { window: null };
     const restore = installHooks({
-        Twm, Rect, Util, Settings, Shortcuts,
+        Twm, Rect, Util, Settings,
         getFocusWindow: () => focus.window,
     });
     return { Twm, calls, originals, restore, focus, Shortcuts };

@@ -14,6 +14,7 @@ import {GridController} from './gridController.js';
 import {FIT, LAYOUTS, MAX_WINDOWS, copyRect, eligibleWindows, gridShape} from './grids.js';
 import {TERMINALS, classifyWindow, defaultLabel, describeFilter, summarizeGroups, toggleGroup, windowMatcher} from './windowGroups.js';
 import {sameRect} from './columns.js';
+import {maximizedFlags, maximizeWindow, unmaximizeWindow, needsNativeRestore} from './windowState.js';
 
 const LAYOUT_BINDINGS = [
     [FIT, 'arrange-all-windows'], [4, 'arrange-four-windows'], [6, 'arrange-six-windows'],
@@ -36,6 +37,18 @@ function section(...children) {
         box.add_child(child);
     return box;
 }
+
+// A later unconstrained preferred-height query can replace FlowLayout's row
+// cache with zero-height rows. Measure with the actual width immediately
+// before allocation so program chips remain visible and clickable on GNOME 50.
+const ChipBox = GObject.registerClass(
+class ChipBox extends St.Widget {
+    vfunc_allocate(box) {
+        const content = this.get_theme_node().get_content_box(box);
+        this.layout_manager.get_preferred_height(this, content.get_width());
+        super.vfunc_allocate(box);
+    }
+});
 
 function plural(count, word) {
     return `${count} ${count === 1 ? word : `${word}s`}`;
@@ -128,7 +141,7 @@ class GridDialog extends ModalDialog.ModalDialog {
 
         // Chips are created once and then only relabelled, so toggling one
         // never moves key focus or reflows the row under the pointer.
-        this._chipBox = new St.Widget({
+        this._chipBox = new ChipBox({
             style_class: 'tiling-grid-chips', x_expand: true,
             // Natural chip widths, wrapped at the stylesheet's max-width.
             layout_manager: new Clutter.FlowLayout({
@@ -362,19 +375,25 @@ export class GridControls {
             getWindows: context => windows(context.workspace),
             isContextCurrent: contextCurrent,
             isAlive: alive,
-            snapshot: window => ({
-                frame: copyRect(window.get_frame_rect()),
-                monitor: window.get_monitor(), workspace: window.get_workspace(),
-                isTiled: Boolean(window.isTiled), tiledRect: copyRect(window.tiledRect),
-                untiledRect: copyRect(window.untiledRect), maximized: window.get_maximized(),
-                fullscreen: window.is_fullscreen(), above: window.is_above(),
-                tileGroup: Twm.getTileGroupFor(window),
-            }),
+            snapshot: window => {
+                const state = {
+                    frame: copyRect(window.get_frame_rect()),
+                    monitor: window.get_monitor(), workspace: window.get_workspace(),
+                    isTiled: Boolean(window.isTiled), tiledRect: copyRect(window.tiledRect),
+                    untiledRect: copyRect(window.untiledRect), maximized: maximizedFlags(window),
+                    fullscreen: window.is_fullscreen(), above: window.is_above(),
+                    tileGroup: Twm.getTileGroupFor(window),
+                };
+                state.nativeState = needsNativeRestore(state, window.get_work_area_for_monitor(state.monitor));
+                return state;
+            },
             tile: async (window, rect, monitorNr, state, cancelled) => {
-                if (state.maximized || state.fullscreen) {
+                // Newer TA uses native single-axis maximization for its
+                // full-height/width tiles. TA already knows how to restore
+                // those; only independent native states need preparation.
+                if (state.nativeState) {
                     window.unmake_fullscreen();
-                    if (window.get_maximized())
-                        window.unmaximize(window.get_maximized());
+                    unmaximizeWindow(window);
                     // Wayland clients commit the restored frame asynchronously.
                     // TA's untiledRect may also predate a later native maximize.
                     let previous = null;
@@ -409,9 +428,7 @@ export class GridControls {
             restore: async (window, state, cancelled) => {
                 Twm.clearTilingProps(window.get_id());
                 window.unmake_fullscreen();
-                const maximized = window.get_maximized();
-                if (maximized)
-                    window.unmaximize(maximized);
+                unmaximizeWindow(window);
                 if (window.override_constraints)
                     window.override_constraints(...Array(4).fill(Meta.WindowConstraint.NONE));
                 if (state.workspace && window.get_workspace() !== state.workspace)
@@ -434,7 +451,7 @@ export class GridControls {
                 const {x, y, width, height} = frame;
                 window.move_frame(true, x, y);
                 window.move_resize_frame(true, x, y, width, height);
-                if (state.maximized || state.fullscreen) {
+                if (state.nativeState) {
                     // Native maximize saves the current committed frame. Doing
                     // this immediately would save the old grid-cell rectangle.
                     // restoreFrame is the actual client frame, including gaps
@@ -445,8 +462,8 @@ export class GridControls {
                 window.isTiled = state.isTiled;
                 window.tiledRect = state.tiledRect ? new Rect(state.tiledRect) : null;
                 window.untiledRect = state.untiledRect ? new Rect(state.untiledRect) : null;
-                if (state.maximized)
-                    window.maximize(state.maximized);
+                if (state.maximized && maximizedFlags(window) !== state.maximized)
+                    maximizeWindow(window, state.maximized);
                 if (state.fullscreen)
                     window.make_fullscreen();
                 if (state.above)
@@ -465,7 +482,7 @@ export class GridControls {
             finishArrange: selected => {
                 // A lone All window is maximized, not tiled, and joins no group.
                 const group = selected.filter(window => alive(window) && window.isTiled);
-                if (group.length && !Settings.getBoolean(Settings.DISABLE_TILE_GROUPS)) {
+                if (group.length && !Settings.getBoolean('disable-tile-groups')) {
                     // Remove reciprocal references in retained overflow groups
                     // before assigning the chosen windows to one fresh group.
                     for (const window of group)

@@ -64,7 +64,6 @@ export default class TilingColumnsExtension extends Extension {
             Rect: utilityModule.Rect,
             Util: utilityModule.Util,
             Settings: commonModule.Settings,
-            Shortcuts: commonModule.Shortcuts,
             getFocusWindow: () => global.display.focus_window,
         });
         this._gridControls = new GridControls(this, {Twm, Rect: utilityModule.Rect, Settings: commonModule.Settings, originalTile});

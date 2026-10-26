@@ -53,7 +53,7 @@ This only applies when two or more full-height tiled columns already fill the mo
 
 ## Install
 
-Requires GNOME Shell 46 and enabled Tiling Assistant, included with Ubuntu 24.04. Keep `tiling-assistant@ubuntu.com` enabled.
+Supports GNOME Shell 46 (Ubuntu 24.04) and 50 (Ubuntu 26.04), with enabled Tiling Assistant. Keep `tiling-assistant@ubuntu.com` enabled. Version 4 adapts to the newer window maximization API and Tiling Assistant 54; older releases appear as **OUT OF DATE** after the Ubuntu upgrade.
 
 ```bash
 git clone https://github.com/samuelfrench/ubuntu-tiling.git

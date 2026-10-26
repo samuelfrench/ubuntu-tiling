@@ -11,7 +11,7 @@ Input is real: Super+Left/Right through a Clutter virtual keyboard and a
 Super+drag through a virtual pointer. Exit status 0 means every check passed,
 including no JS errors from tiling-columns in either shell.log.
 
-Needs GNOME Shell 46, the Ubuntu Tiling Assistant package, and /usr/bin/python3
+Needs GNOME Shell 46 or 50, the Ubuntu Tiling Assistant package, and /usr/bin/python3
 with python3-gi + GTK 3. Usage: tests/integration/run.py [--keep]
 """
 import json
@@ -31,7 +31,7 @@ UUID = "tiling-columns@samuelfrench.github.io"
 TILING_ASSISTANT = "tiling-assistant@ubuntu.com"
 DRIVER = "ut-test-driver@local"
 WIDTH, HEIGHT = 2560, 720
-ACTIVE = 1  # ExtensionState.ACTIVE in GNOME Shell 46
+ACTIVE = 1  # ExtensionState.ACTIVE in GNOME Shell 46 and 50
 TOLERANCE = 2
 # Windows opened with Wayland app id ut-term; the private desktop file below makes
 # Shell.WindowTracker map them to ut-term.desktop, a TerminalEmulator.

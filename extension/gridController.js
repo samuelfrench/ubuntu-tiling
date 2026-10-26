@@ -1,4 +1,5 @@
 import {FIT, copyRect, eligibleWindows, fitsCell, gridCells, planGrid} from './grids.js';
+import {maximizedFlags} from './windowState.js';
 
 /**
  * One reversible operation at a time. GNOME effects are injected so failure,
@@ -123,7 +124,7 @@ export class GridController {
         if (window.isTiled && tiledTo)
             return true;
         const fullArea = ['x', 'y', 'width', 'height'].every(k => rect[k] === workArea[k]);
-        return fullArea && (tiledTo || window.get_maximized() === this._deps.maximizedBoth);
+        return fullArea && (tiledTo || maximizedFlags(window) === this._deps.maximizedBoth);
     }
 
     async _restore(snapshots, cancelled = () => false) {

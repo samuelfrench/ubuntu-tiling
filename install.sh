@@ -40,7 +40,7 @@ install)
     staging=$(mktemp -d)
     trap 'rm -rf "$staging"' EXIT
     cp "$SRC/metadata.json" "$SRC/extension.js" "$SRC/hooks.js" "$SRC/columns.js" \
-        "$SRC/grids.js" "$SRC/windowGroups.js" "$SRC/gridController.js" "$SRC/gridControls.js" \
+        "$SRC/grids.js" "$SRC/windowGroups.js" "$SRC/windowState.js" "$SRC/gridController.js" "$SRC/gridControls.js" \
         "$SRC/stylesheet.css" "$staging/"
     mkdir -p "$staging/schemas"
     cp "$SRC/schemas/"*.gschema.xml "$staging/schemas/"

@@ -1,3 +1,5 @@
+import {maximizedFlags} from './windowState.js';
+
 /**
  * Pure geometry and selection for the fixed 4 to 16 window layouts and the
  * fit layout, which sizes the grid to the matching windows. Shapes follow the
@@ -72,7 +74,7 @@ export function eligibleWindows(windows, {workspace, monitor}, normalType = 0) {
                 !window.minimized && !window.is_skip_taskbar() &&
                 window.get_monitor() === monitor &&
                 (window.get_workspace() === workspace || window.is_on_all_workspaces()) &&
-                (window.get_maximized() || window.is_fullscreen() ||
+                (maximizedFlags(window) || window.is_fullscreen() ||
                     window.allows_move() && window.allows_resize());
         } catch {
             // A window can close while the picker is open.
