@@ -85,6 +85,23 @@
     "test": null
   },
   {
+    "path": "docs/todo/product/gnome-50-upgrade.md",
+    "slug": "gnome-50-upgrade",
+    "title": "Restore the layouts tray after the Ubuntu upgrade",
+    "status": "now",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-26",
+    "owner": "agent",
+    "brief": "GNOME 50.1 rejects version 3 as OUT OF DATE; port, test, install and verify the live panel",
+    "refs": [
+      "extension/metadata.json",
+      "extension/gridControls.js",
+      "tests/integration/run.py"
+    ],
+    "test": null
+  },
+  {
     "path": "docs/todo/product/more-layouts-app-filters.md",
     "slug": "more-layouts-app-filters",
     "title": "More layouts and program-type filters",
