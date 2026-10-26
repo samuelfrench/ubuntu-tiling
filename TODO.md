@@ -6,10 +6,11 @@
 
 ## Now
 
-- [ ] More layouts and program-type filters — Old restart handoff superseded: Ubuntu upgrade rejects v3; activation is part of the GNOME 50 repair · _product_ · [details](docs/todo/product/more-layouts-app-filters.md)
+_None._
 
 ## Waiting on Sam
 
+- [ ] More layouts and program-type filters — v4 upgrade repair installed; waiting for Looking Glass to activate and verify the live layouts picker · _product_ · [details](docs/todo/product/more-layouts-app-filters.md)
 - [ ] Restore the layouts tray after the Ubuntu upgrade — v4 installed and CI/native tests pass; open Looking Glass so the agent can activate it without logout · _product_ · [details](docs/todo/product/gnome-50-upgrade.md)
 
 ## Scheduled (by due date)

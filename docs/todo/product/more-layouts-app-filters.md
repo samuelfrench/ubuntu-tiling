@@ -1,11 +1,11 @@
 ---
 title: "More layouts and program-type filters"
-status: now
+status: waiting-sam
 area: product
 due: null
 updated: 2026-10-26
-owner: agent
-brief: "Old restart handoff superseded: Ubuntu upgrade rejects v3; activation is part of the GNOME 50 repair"
+owner: sam
+brief: "v4 upgrade repair installed; waiting for Looking Glass to activate and verify the live layouts picker"
 refs:
   - "docs/superpowers/plans/2026-10-18-more-layouts-and-app-filters.md"
   - "docs/verification/2026-10-18/README.md"
