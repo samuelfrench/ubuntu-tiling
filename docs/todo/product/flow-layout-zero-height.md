@@ -9,7 +9,7 @@ brief: "GNOME 50.1 gives 28px-natural-height chips 0px allocation; local allocat
 refs:
   - "extension/gridControls.js"
   - "tests/integration/scenario.js"
-  - "docs/todo/product/gnome-50-upgrade.md"
+  - "docs/todo/done/product/gnome-50-upgrade.md"
 test: null
 ---
 

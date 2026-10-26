@@ -22,5 +22,8 @@
     }
   ],
   "extensionErrors": [],
-  "manualPickerCheck": "Requested; bounded read-only observation did not capture an open picker"
+  "manualPickerCheck": "Confirmed by Sam after the requested live picker check",
+  "userConfirmedPicker": true,
+  "userConfirmationQuote": "yes, it's all working now",
+  "finalCheckedAt": "2026-10-26T22:02:37.191826+00:00"
 }

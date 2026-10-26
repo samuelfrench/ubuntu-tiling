@@ -50,6 +50,44 @@
     "test": null
   },
   {
+    "path": "docs/todo/done/product/gnome-50-upgrade.md",
+    "slug": "gnome-50-upgrade",
+    "title": "Restore the layouts tray after the Ubuntu upgrade",
+    "status": "done",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-26",
+    "owner": "agent",
+    "brief": "v4 ACTIVE; Sam confirmed tray and picker work; verified and activated without a desktop restart",
+    "refs": [
+      "extension/metadata.json",
+      "extension/windowState.js",
+      "extension/gridControls.js",
+      "docs/verification/2026-10-26/README.md",
+      "docs/verification/2026-10-26/live.json"
+    ],
+    "test": null
+  },
+  {
+    "path": "docs/todo/done/product/more-layouts-app-filters.md",
+    "slug": "more-layouts-app-filters",
+    "title": "More layouts and program-type filters",
+    "status": "done",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-26",
+    "owner": "agent",
+    "brief": "Layouts and program filters live in v4; Sam confirmed everything works on GNOME 50",
+    "refs": [
+      "docs/superpowers/plans/2026-10-18-more-layouts-and-app-filters.md",
+      "docs/verification/2026-10-18/README.md",
+      "extension/grids.js",
+      "extension/windowGroups.js",
+      "extension/gridControls.js"
+    ],
+    "test": null
+  },
+  {
     "path": "docs/todo/done/product/six-eight-window-grids.md",
     "slug": "six-eight-window-grids",
     "title": "Easy six- and eight-window layouts",
@@ -97,43 +135,7 @@
     "refs": [
       "extension/gridControls.js",
       "tests/integration/scenario.js",
-      "docs/todo/product/gnome-50-upgrade.md"
-    ],
-    "test": null
-  },
-  {
-    "path": "docs/todo/product/gnome-50-upgrade.md",
-    "slug": "gnome-50-upgrade",
-    "title": "Restore the layouts tray after the Ubuntu upgrade",
-    "status": "waiting-sam",
-    "area": "product",
-    "due": null,
-    "updated": "2026-10-26",
-    "owner": "sam",
-    "brief": "v4 ACTIVE and tray visible after manual activation; final read-only picker check pending",
-    "refs": [
-      "extension/metadata.json",
-      "extension/gridControls.js",
-      "tests/integration/run.py"
-    ],
-    "test": null
-  },
-  {
-    "path": "docs/todo/product/more-layouts-app-filters.md",
-    "slug": "more-layouts-app-filters",
-    "title": "More layouts and program-type filters",
-    "status": "waiting-sam",
-    "area": "product",
-    "due": null,
-    "updated": "2026-10-26",
-    "owner": "sam",
-    "brief": "v4 active and tray confirmed visible; waiting only for manual picker confirmation",
-    "refs": [
-      "docs/superpowers/plans/2026-10-18-more-layouts-and-app-filters.md",
-      "docs/verification/2026-10-18/README.md",
-      "extension/grids.js",
-      "extension/windowGroups.js",
-      "extension/gridControls.js"
+      "docs/todo/done/product/gnome-50-upgrade.md"
     ],
     "test": null
   },
