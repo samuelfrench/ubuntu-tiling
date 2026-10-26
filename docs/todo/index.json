@@ -93,7 +93,7 @@
     "due": null,
     "updated": "2026-10-26",
     "owner": "agent",
-    "brief": "GNOME 50.1 gives 28px-natural-height chips 0px allocation; local allocation workaround under verification",
+    "brief": "GNOME 50.1 gives 28px-natural-height chips 0px allocation; local allocation workaround verified by real pointer clicks",
     "refs": [
       "extension/gridControls.js",
       "tests/integration/scenario.js",

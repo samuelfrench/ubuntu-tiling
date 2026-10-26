@@ -26,7 +26,7 @@ _None._
 - [ ] Evaluate isolated GNOME integration in CI — Retained untested CI proposal; unit and TODO guards remain the actual CI gate · _ci_ · [details](docs/todo/ci/headless-integration-ci.md)
 - [ ] Consider upstream column insertion — Check existing Leleat/Tiling-Assistant issues after live use; external PR needs Sam approval · _product_ · [details](docs/todo/product/upstream-column-insertion.md)
 - [ ] Investigate native restore with identical bounds if encountered — Unobserved narrow native-restore case; retain conservative 500 ms frame guard and manual-restore workaround · _product_ · [details](docs/todo/product/native-unchanged-frame.md)
-- [ ] Prepare an upstream report for zero-height FlowLayout children — GNOME 50.1 gives 28px-natural-height chips 0px allocation; local allocation workaround under verification · _product_ · [details](docs/todo/product/flow-layout-zero-height.md)
+- [ ] Prepare an upstream report for zero-height FlowLayout children — GNOME 50.1 gives 28px-natural-height chips 0px allocation; local allocation workaround verified by real pointer clicks · _product_ · [details](docs/todo/product/flow-layout-zero-height.md)
 - [ ] Re-expand columns after a window leaves — Retained follow-up: stock leaves free space after close or untile; no current implementation · _product_ · [details](docs/todo/product/reexpand-columns.md)
 - [ ] Verify dragged-window identity before changing it — Historical possible preview/drop mismatch is unobserved; preserve the exact reproduction lead · _product_ · [details](docs/todo/product/dragged-window-identity.md)
 
