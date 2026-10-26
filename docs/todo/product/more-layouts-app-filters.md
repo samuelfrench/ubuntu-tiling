@@ -1,11 +1,11 @@
 ---
 title: "More layouts and program-type filters"
-status: waiting-sam
+status: now
 area: product
 due: null
-updated: 2026-10-18
-owner: sam
-brief: "Version 3 installed; Sam declined a shell restart 2026-10-18, so it loads at his next restart or login"
+updated: 2026-10-26
+owner: agent
+brief: "Old restart handoff superseded: Ubuntu upgrade rejects v3; activation is part of the GNOME 50 repair"
 refs:
   - "docs/superpowers/plans/2026-10-18-more-layouts-and-app-filters.md"
   - "docs/verification/2026-10-18/README.md"
@@ -20,7 +20,8 @@ test: null
 - **Verified 2026-10-18:** `node --test tests/*.test.mjs` 133/133; `python3 tests/integration/test_run_offline.py` 10/10 (now in CI); TODO tests 27/27; schema strict dry-run; `node --check` all extension files; `python3 tests/integration/install.py` PASS. Native isolated GNOME 46 suite (`tests/integration/run.py --keep`, Sam said "go" 2026-10-18 12:04 CT) **PASS** at 7c3653a; receipts in `docs/verification/2026-10-18/`. Two earlier native runs failed only the new screenshot-size check (measured the full-stage `dialogLayout`; fixed to `Dialog._dialog`). Reviews: per-task spec+quality reviews, whole-branch review (1 Critical + 1 Important fixed and re-reviewed), harness review.
 - **Installed:** `./install.sh` at 2026-10-18T17:20:40Z; all runtime files in `~/.local/share/gnome-shell/extensions/tiling-columns@samuelfrench.github.io/` byte-identical to `extension/`; `window-filter` default `[]`; Tiling Assistant ACTIVE. Running shell still reports Version 2 until reload.
 - **Activation deferred (2026-10-18 ~12:35 CT):** Sam asked to load v3 "if you can do without restarting". Not possible on GNOME 46: `extensionSystem.js` imports `extension.js` once per URI (comment: "Extensions can only be imported once"), so disable/enable reruns v2; `org.gnome.Shell.Eval` returns `(false, '')` (unsafe mode off). Sam answered "no" to an Alt+F2 r restart. Do not restart his shell; v3 activates at his next shell restart or login. Until then the tray icon and shortcuts run v2 (6/8 only).
-- **Next — Sam:** X11 Alt+F2, type `r`, Enter. Then `gnome-extensions info tiling-columns@samuelfrench.github.io` must show Version 3, ACTIVE. Super+Alt+Space → click **Terminals** → **All · 11** → Arrange windows (11 terminals → 6+5 grid); Super+Alt+Z undoes. Optional design call: **All · 16** currently uses 6+5+5 rows while the **16** button uses 8×2 (scoring prefers the ragged shape); say if All should match the numbered button. Record observed live behavior here and move to done.
+- **Current activation work (2026-10-26):** Ubuntu 26.04.1 now runs GNOME 50.1 Wayland. Version 3 is enabled but OUT OF DATE, not an imported v2 session. The X11 restart handoff is superseded by [GNOME 50 recovery](gnome-50-upgrade.md). Version 4 compatibility, native verification and targeted activation are in progress there. Do not ask Sam to restart the old X11 shell.
+- **Next — agent:** Complete the GNOME 50 recovery and verify the live grid icon and picker with program filters before closing this task. Existing All·16 behavior remains 6+5+5 while the numbered 16 button uses 8×2.
 - **Known risk (not changed):** default `<Super><Alt>8` (arrange 8) collides with GNOME's magnifier `<Alt><Super>8` (`org.gnome.settings-daemon.plugins.media-keys magnifier`). Which wins on the live session is unverified; if Super+Alt+8 toggles zoom, rebind with `gsettings --schemadir ~/.local/share/gnome-shell/extensions/tiling-columns@samuelfrench.github.io/schemas set org.gnome.shell.extensions.tiling-columns arrange-eight-windows "['<Super><Alt><Shift>8']"`. New defaults were checked against all live keybinding schemas: no conflicts.
 - **Rulings made without Sam (cost if wrong):** shapes by 4:3 cell aspect (a different preference changes one constant); All max 16 (more windows stay in place, disclosed); filter persists and applies to every shortcut (Sam may expect shortcuts to ignore it — reset via picker "All windows"); filter written only on Arrange; the leftover group is labelled **Other**; unfiltered empty text stays "No resizable windows…"; All with one window maximizes; focus after a filtered arrange goes to the most recent arranged window; All·16 keeps 6+5+5 (documented in README).
 - **Parked review items (not fixed, evidence in review):** `gridController.js` `_placed` accepts a native maximize without checking `window.get_monitor() === context.monitor` (TA #137 wrong-monitor maximize; one-monitor host unaffected; Undo refuses if moved); misleading comment near `tests/gridController.test.mjs:350` ("tile group is empty here"); picker copy builders have no node tests (pure helpers could move out of `gridControls.js`, now ~600 lines); dialog re-derives count/rows/overflow instead of using `planGrid`; `LAYOUT_BINDINGS` duplicates `LAYOUTS` without a drift check; FlowLayout spacing unscaled on HiDPI. Task-1/2 test-polish minors listed in the plan's review history are cosmetic.

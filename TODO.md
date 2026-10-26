@@ -6,11 +6,12 @@
 
 ## Now
 
+- [ ] More layouts and program-type filters — Old restart handoff superseded: Ubuntu upgrade rejects v3; activation is part of the GNOME 50 repair · _product_ · [details](docs/todo/product/more-layouts-app-filters.md)
 - [ ] Restore the layouts tray after the Ubuntu upgrade — GNOME 50.1 rejects version 3 as OUT OF DATE; port, test, install and verify the live panel · _product_ · [details](docs/todo/product/gnome-50-upgrade.md)
 
 ## Waiting on Sam
 
-- [ ] More layouts and program-type filters — Version 3 installed; Sam declined a shell restart 2026-10-18, so it loads at his next restart or login · _product_ · [details](docs/todo/product/more-layouts-app-filters.md)
+_None._
 
 ## Scheduled (by due date)
 
