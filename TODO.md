@@ -11,7 +11,7 @@ _None._
 ## Waiting on Sam
 
 - [ ] More layouts and program-type filters — v4 upgrade repair installed; waiting for Looking Glass to activate and verify the live layouts picker · _product_ · [details](docs/todo/product/more-layouts-app-filters.md)
-- [ ] Restore the layouts tray after the Ubuntu upgrade — v4 installed and CI/native tests pass; open Looking Glass so the agent can activate it without logout · _product_ · [details](docs/todo/product/gnome-50-upgrade.md)
+- [ ] Restore the layouts tray after the Ubuntu upgrade — v4 installed and verified; manual activation pending after Sam disabled Alt+F2; stop automated input · _product_ · [details](docs/todo/product/gnome-50-upgrade.md)
 
 ## Scheduled (by due date)
 

@@ -110,7 +110,7 @@
     "due": null,
     "updated": "2026-10-26",
     "owner": "sam",
-    "brief": "v4 installed and CI/native tests pass; open Looking Glass so the agent can activate it without logout",
+    "brief": "v4 installed and verified; manual activation pending after Sam disabled Alt+F2; stop automated input",
     "refs": [
       "extension/metadata.json",
       "extension/gridControls.js",
