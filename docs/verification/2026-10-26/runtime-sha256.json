@@ -1,0 +1,13 @@
+{
+  "columns.js": "5d80abea95dcfd6e23479bd4e038ffb66d7227927ff6943aaf52bee82856acad",
+  "extension.js": "9a85e9ed0d1ffe39ab1fd7028ba67dc842416d44c79eebbcd6df43dffca1e179",
+  "gridController.js": "5621b14fae059ec14ccb421d50ba432b3f20d587ba0414b0b2823fdb3584ee0d",
+  "gridControls.js": "6584e2e7587fd9eb66db36022f9b15e09489e76d3e918f6ccae91685d79370f9",
+  "grids.js": "69233d56950d0dab19920aa8c5748a38492e0db35cb317b84e2fbd07efdf1132",
+  "hooks.js": "c33ba74a34104d79f39a247fa173bef248a7085e0b2790eccd50c51a298b59ef",
+  "metadata.json": "b45964c3960d3ae9e7f79eb3d71ec1ea81b8a5487c2d9fad8a7ab0ca4264a1ae",
+  "schemas/org.gnome.shell.extensions.tiling-columns.gschema.xml": "d44e0ea125465ff5b85cf215ade8d2fa253f0be6b93b3b376cb35b3b9898af4f",
+  "stylesheet.css": "7f22b05b0cf82553ba671233b9fd611e3ac097612346cc6d8cfa596722273657",
+  "windowGroups.js": "b2c38ff6e8a4660f1c533b5cecb8b548998aebc1b01469c15a5be46fe552d007",
+  "windowState.js": "636d3b66b1e5139e928bccfe286b2107bb615e37b46ed667e9cf60997eeb75d8"
+}

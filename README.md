@@ -2,7 +2,7 @@
 
 4 to 16 windows on one screen, or every window of the program types you pick, with a native GNOME picker, keyboard shortcuts and undo. Extends Ubuntu's built-in **Tiling Assistant** and keeps the existing column-insertion controls.
 
-**Verified (2026-10-18, version 3):** 133 unit tests, 10 offline harness tests, 27 task-tool checks, isolated installation checks and the native GNOME 46 desktop suite pass. The desktop suite covers layouts 4/6/8/9/10/12/16, the All layout, program-type filter chips with the saved `window-filter`, every shortcut, the picker and panel button, Undo, gaps, overflow groups and extension cleanup. See [verification](docs/verification/2026-10-18/README.md) and generated [TODO.md](TODO.md). Installing an update requires one Shell reload.
+**Verified (2026-10-26, version 4):** 137 unit tests, 10 offline harness tests, 27 task-tool checks, isolated installation checks and the native GNOME 50.1 / Tiling Assistant 54 desktop suite pass. The desktop suite covers layouts 4/6/8/9/10/12/16, the All layout, program-type filters, shortcuts, the picker and panel button, Undo (including native maximize/fullscreen over tiled windows), gaps, overflow groups and extension cleanup. See [current verification](docs/verification/2026-10-26/README.md), [historical GNOME 46 verification](docs/verification/2026-10-18/README.md) and generated [TODO.md](TODO.md). Version 4 retains the GNOME 46 API path with unit coverage; its current native run was on GNOME 50.
 
 ## Use
 
