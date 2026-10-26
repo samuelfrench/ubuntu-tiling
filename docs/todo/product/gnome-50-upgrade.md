@@ -1,11 +1,11 @@
 ---
 title: "Restore the layouts tray after the Ubuntu upgrade"
-status: now
+status: waiting-sam
 area: product
 due: null
 updated: 2026-10-26
-owner: agent
-brief: "GNOME 50.1 rejects version 3 as OUT OF DATE; port, test, install and verify the live panel"
+owner: sam
+brief: "v4 installed and CI/native tests pass; open Looking Glass so the agent can activate it without logout"
 refs:
   - "extension/metadata.json"
   - "extension/gridControls.js"
@@ -22,4 +22,6 @@ test: null
 - **Activation preflight verified:** Existing user ACL permits `/dev/uinput`; temporary `uv run --cache-dir /tmp/ubuntu-tiling-uv-cache --no-project --with evdev` provides keyboard input. Alt+F2 → `lg` opens Looking Glass, and AT-SPI exposes its focused editable entry. Closed with Escape after inspection; no live extension change. After green tests, use `await Main.extensionManager.reloadExtension(Main.extensionManager.lookup('tiling-columns@samuelfrench.github.io'))` there; no global validation changes. Live Shell PID before recovery is 10586.
 - **Further native evidence:** Run 3 (`/tmp/ubuntu-tiling-gnome50-native-3.log`, columns `/tmp/ut-columns-w_etdhg5`) passes pointer-based program-chip clicks and ordinary column Undo. Two remaining assertions exposed native maximize/fullscreen layered over a corner tile. The new `needsNativeRestore(state, workArea)` distinguishes TA-owned axis constraints from independent native state; 137 node tests pass, including regression cases for full-height/full-width tiles and native overlays. Native run 4 `/tmp/ubuntu-tiling-gnome50-native-4.log` is running; read-only task review is in progress.
 - **Validated runtime:** `80e3a0e56fdeec49b263c539e8907f0380de9136`, version 4. Run 4 PASS (`/tmp/ut-stock-zi8mi3hu`, `/tmp/ut-columns-688a538j`), no extension JS errors; real-pointer chips are 28px high and both picker captures fit within 2560×720. All 11 runtime source files byte-match the native test install. Full local gates: 137 unit, 10 offline, 27 TODO tests; generated TODO, isolated installer, strict schema, syntax, metadata and diff checks pass. Read-only review found no blockers. Retained receipts: `docs/verification/2026-10-26/`.
-- **Next:** Push the validated code and receipts, confirm CI, then install and target only this extension for activation. Parent owns the live session; native tests only used isolated sessions.
+- **Installed:** Source and receipts pushed at `8d30d29e697adf2efcf7038a4e7e98d6a699be34`; GitHub CI `40406347257` passed. `./install.sh` deployed v4 and all 11 installed files match `docs/verification/2026-10-26/runtime-sha256.json`; compiled schema exists. Previous v3 files and session settings are backed up privately at `/home/sam/.local/state/ubuntu-tiling/gnome50-recovery-20261026/`. Live Shell remains PID 10586 with old v3 metadata OUT OF DATE until targeted reload; stock TA stays ACTIVE and version checking stays enabled.
+- **Activation handoff:** Initial console preflight worked, but later automated keyboard attempts did not reliably reopen the visible Run/Looking Glass controls. No reload command was executed, no live restart/logout occurred, and the repaired icon is not yet verified live. Asked Sam to press Alt+F2, type `lg`, Enter, and leave Looking Glass open. Once its visible Evaluator/focused entry is confirmed through AT-SPI, run the targeted reload expression above and close the console. If the old extension is already imported, stop and inspect before attempting a new-version reload.
+- **Next:** Finish targeted activation after Sam opens Looking Glass; verify v4 ACTIVE, visible nonzero-size panel, live picker open/cancel, unchanged Shell PID/stock extension/version-validation setting, and exact installed hashes. Then update this task and the old v3 layout handoff, memory and live verification receipts. Do not call the user goal complete before the tray is restored.
