@@ -6,11 +6,11 @@
 
 ## Now
 
-- [ ] Silence successful keyboard resize notifications — Shortcut success toasts suppressed and local checks pass; install after green CI, then Sam activates later · _product_ · [details](docs/todo/product/quiet-keyboard-resize.md)
+_None._
 
 ## Waiting on Sam
 
-_None._
+- [ ] Silence successful keyboard resize notifications — 9a20383 tested, pushed and installed; Sam chose to activate later by logout/login, then verify a quiet resize · _product_ · [details](docs/todo/product/quiet-keyboard-resize.md)
 
 ## Scheduled (by due date)
 

@@ -159,12 +159,12 @@
     "path": "docs/todo/product/quiet-keyboard-resize.md",
     "slug": "quiet-keyboard-resize",
     "title": "Silence successful keyboard resize notifications",
-    "status": "now",
+    "status": "waiting-sam",
     "area": "product",
     "due": null,
     "updated": "2026-10-26",
-    "owner": "agent",
-    "brief": "Shortcut success toasts suppressed and local checks pass; install after green CI, then Sam activates later",
+    "owner": "sam",
+    "brief": "9a20383 tested, pushed and installed; Sam chose to activate later by logout/login, then verify a quiet resize",
     "refs": [
       "extension/gridControls.js",
       "README.md"

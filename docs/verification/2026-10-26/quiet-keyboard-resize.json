@@ -16,5 +16,81 @@
   "actualControllerErrorNotification": [
     "Window layouts",
     "No Terminals windows on this monitor and workspace."
-  ]
+  ],
+  "verificationScope": "Actual shortcut callback and arrange source executed with GNOME dependency stubs; not live desktop input.",
+  "runtimeRevision": "9a203836fdd34c1a145685e7a7419629da2c6f6a",
+  "localGates": {
+    "unitTests": 137,
+    "todoTests": 27,
+    "offlineHarnessTests": 10,
+    "isolatedInstaller": "PASS",
+    "metadata": "PASS",
+    "strictSchema": "PASS",
+    "bashAndJSSyntax": "PASS",
+    "whitespace": "PASS"
+  },
+  "gridControlsSha256": "bc88e7879ec99703e37d5e5ce87b29d78be12c233b9e15ca2e3473ded895d7a2",
+  "ci": {
+    "conclusion": "success",
+    "databaseId": 40435469424,
+    "headSha": "9a203836fdd34c1a145685e7a7419629da2c6f6a",
+    "status": "completed",
+    "url": "https://github.com/samuelfrench/ubuntu-tiling/actions/runs/40435469424"
+  },
+  "installedAt": "2026-10-27T01:56:48.663841+00:00",
+  "installedFiles": [
+    {
+      "path": "columns.js",
+      "sha256": "5d80abea95dcfd6e23479bd4e038ffb66d7227927ff6943aaf52bee82856acad"
+    },
+    {
+      "path": "extension.js",
+      "sha256": "9a85e9ed0d1ffe39ab1fd7028ba67dc842416d44c79eebbcd6df43dffca1e179"
+    },
+    {
+      "path": "gridController.js",
+      "sha256": "5621b14fae059ec14ccb421d50ba432b3f20d587ba0414b0b2823fdb3584ee0d"
+    },
+    {
+      "path": "gridControls.js",
+      "sha256": "bc88e7879ec99703e37d5e5ce87b29d78be12c233b9e15ca2e3473ded895d7a2"
+    },
+    {
+      "path": "grids.js",
+      "sha256": "69233d56950d0dab19920aa8c5748a38492e0db35cb317b84e2fbd07efdf1132"
+    },
+    {
+      "path": "hooks.js",
+      "sha256": "c33ba74a34104d79f39a247fa173bef248a7085e0b2790eccd50c51a298b59ef"
+    },
+    {
+      "path": "metadata.json",
+      "sha256": "b45964c3960d3ae9e7f79eb3d71ec1ea81b8a5487c2d9fad8a7ab0ca4264a1ae"
+    },
+    {
+      "path": "schemas/org.gnome.shell.extensions.tiling-columns.gschema.xml",
+      "sha256": "d44e0ea125465ff5b85cf215ade8d2fa253f0be6b93b3b376cb35b3b9898af4f"
+    },
+    {
+      "path": "stylesheet.css",
+      "sha256": "7f22b05b0cf82553ba671233b9fd611e3ac097612346cc6d8cfa596722273657"
+    },
+    {
+      "path": "windowGroups.js",
+      "sha256": "b2c38ff6e8a4660f1c533b5cecb8b548998aebc1b01469c15a5be46fe552d007"
+    },
+    {
+      "path": "windowState.js",
+      "sha256": "636d3b66b1e5139e928bccfe286b2107bb615e37b46ed667e9cf60997eeb75d8"
+    }
+  ],
+  "installedFilesMatch": 11,
+  "compiledSchema": true,
+  "privateBackup": "/home/sam/.local/state/ubuntu-tiling/quiet-keyboard-resize-20261027T015636Z",
+  "shellPid": "10586",
+  "sessionSettingsUnchanged": true,
+  "extensionActive": true,
+  "stockTilingAssistantActive": true,
+  "activation": "PENDING: existing v4 code remains cached; Sam chose to activate later by logout/login. No restart, automated key input or command box used.",
+  "liveQuietResizeVerified": false
 }

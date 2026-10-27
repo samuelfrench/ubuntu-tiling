@@ -1,11 +1,11 @@
 ---
 title: "Silence successful keyboard resize notifications"
-status: now
+status: waiting-sam
 area: product
 due: null
 updated: 2026-10-26
-owner: agent
-brief: "Shortcut success toasts suppressed and local checks pass; install after green CI, then Sam activates later"
+owner: sam
+brief: "9a20383 tested, pushed and installed; Sam chose to activate later by logout/login, then verify a quiet resize"
 refs:
   - "extension/gridControls.js"
   - "README.md"
@@ -17,4 +17,6 @@ test: null
 - **Implemented:** All eight arrangement callbacks pass `{notifySuccess: false}` to `GridControls.arrange`. Its default retains picker success feedback. The saved program-filter default and controller behavior are unchanged; README describes the distinction.
 - **Validation:** `node --test tests/*.test.mjs` passed 137/137; `node --test scripts/todo/__tests__/*.test.mjs` passed 27/27; `/usr/bin/python3 tests/integration/test_run_offline.py` passed 10/10; generated TODO, isolated install/reinstall/uninstall, strict schema, metadata, Bash/JS syntax and whitespace checks passed. One-off `/tmp/ubuntu-tiling-quiet-resize-verify.mjs` executed actual source for all eight shortcut callbacks and `arrange`: zero success notifications, saved filter read at invocation, picker success/overflow/Undo text retained, actual controller error notification retained. Receipt: `docs/verification/2026-10-26/quiet-keyboard-resize.json`. Parent task review found no blocking issue. No new native GNOME test shell was launched; this focused check uses stubs for GNOME dependencies and is not live-desktop proof.
 - **Activation control:** On October 26 Sam answered "Install it; I’ll activate it later." Live GNOME 50.1 currently has v4 ACTIVE and Shell Eval returns `(false, '')`; installed JS changes will remain cached until his next logout/login. Do not open command boxes, inject keys, change shortcuts, restart the desktop, toggle global version validation or disable stock Tiling Assistant.
-- **Next:** Commit/push and wait for the exact revision's green CI, install with a private backup and byte verification, then retain this task as `waiting-sam` for logout/login. After Sam activates, verify both extensions ACTIVE and ask for a keyboard resize with no success toast before closing the task or goal.
+- **Release and installed proof:** Runtime revision `9a203836fdd34c1a145685e7a7419629da2c6f6a` is committed and pushed to `origin/main`; exact-revision CI [40435469424](https://github.com/samuelfrench/ubuntu-tiling/actions/runs/40435469424) passed. `./install.sh` installed all 11 source-identical runtime files with compiled schema at `2026-10-27T01:56Z` (October 26 CT). Backup: `/home/sam/.local/state/ubuntu-tiling/quiet-keyboard-resize-20261027T015636Z/`. Live Shell PID 10586, enabled/disabled extension lists, version-validation setting and extension settings are unchanged; both extensions remain ACTIVE. These are installation and session-preservation checks, not proof that cached code has changed. No new service or billing.
+- **Shared memory:** `/home/sam/.codex/memories/extensions/ad_hoc/notes/20261027T015736Z-codex-quiet-keyboard-resize-installed-e8f2d46d.md` records the current installed revision, preserves the completed GNOME 50 recovery, and replaces the older current-state note. Its canonical file is linked into shared Claude memory.
+- **Next / done criterion:** Sam logs out and back in when convenient, then uses a numbered Super+Alt arrangement shortcut and Super+Alt+A with no successful Arrange toast. Verify `gnome-extensions info tiling-columns@samuelfrench.github.io` and `gnome-extensions info tiling-assistant@ubuntu.com` both report ACTIVE, recheck source/installed byte hashes against the receipt, and record his live resize confirmation before moving this task to done or completing the goal. Reproduce local gates from `.github/workflows/test.yml`; receipt: `docs/verification/2026-10-26/quiet-keyboard-resize.json`. Do not reactivate automatically or claim the quiet behavior is already live.
