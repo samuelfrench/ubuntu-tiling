@@ -31,7 +31,7 @@ Super is usually the Windows key. Tab and arrow keys navigate the native control
 - **Terminals:** every program whose desktop file has the `TerminalEmulator` category (GNOME Terminal, Console, Ptyxis, Kitty, Alacritty, WezTerm, Ghostty, Konsole, Tilix and others), plus any window whose WM class is a known terminal, with or without a desktop file (for example `kitty`, `Alacritty`, `foot`, `xterm`, `org.wezfurlong.wezterm`).
 - **Other programs:** one chip per desktop file. Windows without one are grouped by WM class; anything left over is **Other**.
 
-The choice is saved when you press **Arrange windows**; Cancel and chip clicks do not change it. Every Super+Alt arrange shortcut then uses the saved choice, and the notification names it, for example `Arranged 11 windows (Terminals). Super+Alt+Z to undo.` A saved program with no open windows still shows a chip with count 0, so you can clear it.
+The choice is saved when you press **Arrange windows**; Cancel and chip clicks do not change it. Every Super+Alt arrange shortcut then uses the saved choice and resizes without a success notification. Arranging through the picker still confirms the program types, for example `Arranged 11 windows (Terminals). Super+Alt+Z to undo.` A saved program with no open windows still shows a chip with count 0, so you can clear it.
 
 To go back to all windows, open the picker, pick **All windows** and press **Arrange windows**, or run:
 
@@ -41,7 +41,7 @@ gsettings --schemadir ~/.local/share/gnome-shell/extensions/tiling-columns@samue
 
 ### What Arrange moves
 
-Arrange uses normal, resizable, non-minimized windows of the chosen program types on the **focused window's monitor and current workspace**. A numbered layout picks that many of the most recently used matching windows, then preserves their spatial order where practical; fewer windows leave empty tiles. **All** uses one tile per matching window, so 11 windows on a wide monitor become rows of 6 and 5. All picks the best-fitting rows for its number of windows, so **All · 16** can differ from the **16 · 8×2** button: on a 5120×1440 monitor All · 16 uses rows of 6, 5 and 5, while 16 keeps two rows of 8. Extra windows stay in place, and the picker and notification disclose the count. A window that cannot fit triggers a visible message and restores the previous layout.
+Arrange uses normal, resizable, non-minimized windows of the chosen program types on the **focused window's monitor and current workspace**. A numbered layout picks that many of the most recently used matching windows, then preserves their spatial order where practical; fewer windows leave empty tiles. **All** uses one tile per matching window, so 11 windows on a wide monitor become rows of 6 and 5. All picks the best-fitting rows for its number of windows, so **All · 16** can differ from the **16 · 8×2** button: on a 5120×1440 monitor All · 16 uses rows of 6, 5 and 5, while 16 keeps two rows of 8. Extra windows stay in place, and the picker and its success notification disclose the count. A window that cannot fit triggers a visible message and restores the previous layout, including when using a keyboard shortcut.
 
 Undo restores the preceding positions and tiling/maximized/fullscreen/always-on-top state; closed windows are ignored. There is one undo step, retained until the next successful layout or extension reload. Undo requires the original workspace and monitor arrangement. Existing Tiling Assistant gaps and shared-border resizing apply.
 

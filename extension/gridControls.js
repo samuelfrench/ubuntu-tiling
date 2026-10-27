@@ -514,10 +514,10 @@ export class GridControls {
             });
             Main.panel.addToStatusArea('tiling-columns-grid', this._panel);
             this._settings = extension.getSettings();
-            // Every arrange shortcut applies the filter last saved by the picker.
+            // Arrange shortcuts apply the saved filter without a success notification.
             const bindings = [
                 ['show-grid-picker', () => this.openPicker()],
-                ...LAYOUT_BINDINGS.map(([layout, name]) => [name, () => this.arrange(layout)]),
+                ...LAYOUT_BINDINGS.map(([layout, name]) => [name, () => this.arrange(layout, undefined, undefined, {notifySuccess: false})]),
                 ['undo-grid-layout', () => this.undo()],
             ];
             for (const [name, action] of bindings) {
@@ -586,13 +586,13 @@ export class GridControls {
     }
 
     /** `layout` is a LAYOUTS count or FIT; `selected` narrows it to program types. */
-    async arrange(layout, context, selected = this.filter) {
+    async arrange(layout, context, selected = this.filter, {notifySuccess = true} = {}) {
         this.lastCount = layout;
         const result = await this.controller.arrange(layout, context, {
             matches: windowMatcher(selected, groupFor),
             label: describeFilter(selected, labelFor),
         });
-        if (result.ok && !this._destroyed) {
+        if (notifySuccess && result.ok && !this._destroyed) {
             const scope = result.label ? ` (${result.label})` : '';
             const extra = result.overflow ? ` ${result.overflow} less-recent ${result.overflow === 1 ? 'window was' : 'windows were'} left in place.` : '';
             Main.notify('Window layouts', `Arranged ${plural(result.moved, 'window')}${scope}.${extra} Super+Alt+Z to undo.`);

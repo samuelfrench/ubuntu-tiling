@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "shortcutCallbacks": [
+    "arrange-all-windows",
+    "arrange-four-windows",
+    "arrange-six-windows",
+    "arrange-eight-windows",
+    "arrange-nine-windows",
+    "arrange-ten-windows",
+    "arrange-twelve-windows",
+    "arrange-sixteen-windows"
+  ],
+  "successNotifications": 0,
+  "savedFilterReadAtInvocation": true,
+  "pickerSuccessOverflowUndoFeedback": true,
+  "actualControllerErrorNotification": [
+    "Window layouts",
+    "No Terminals windows on this monitor and workspace."
+  ]
+}
