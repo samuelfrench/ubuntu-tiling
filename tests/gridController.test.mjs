@@ -20,6 +20,7 @@ function setup(count = 3) {
         is_fullscreen() { return this.fullscreen; },
         allows_move() { return true; },
         allows_resize() { return true; },
+        get_title() { return `Window ${this.id}`; },
         get_frame_rect() { return this.frame; },
     }));
     const context = {windows, workspace, monitor: 0, workArea: area, focusWindow: windows[0]};
@@ -139,6 +140,23 @@ test('silent TA refusal and app minimum size overflow both roll back visibly', a
         assert.equal((await s.controller.arrange(6)).ok, false);
         assert.deepEqual(s.windows.map(s.state), before);
         assert.equal(s.errors.length, 1);
+    }
+});
+
+test('minimum-size alert identifies the overflowing window and handles an untitled window', async () => {
+    for (const title of ['Editor document', '  ']) {
+        const s = setup();
+        s.windows[1].get_title = () => title;
+        const before = s.windows.map(s.state);
+        const tile = s.deps.tile;
+        s.deps.tile = async (...args) => {
+            await tile(...args);
+            if (args[0] === s.windows[1]) args[0].frame.width += 200;
+        };
+        const result = await s.controller.arrange(6);
+        assert.equal(result.ok, false);
+        assert.equal(s.errors.at(-1), `${title.trim() ? '“Editor document”' : 'An untitled window'} has a minimum size too large for this layout. Try a layout with fewer tiles.`);
+        assert.deepEqual(s.windows.map(s.state), before);
     }
 });
 
@@ -312,7 +330,7 @@ test('names the larger layout fix when an app minimum size overflows', async () 
         args[0].frame.width += 200;
     };
     assert.equal((await s.controller.arrange(6)).ok, false);
-    assert.equal(s.errors.at(-1), 'A window’s minimum size is too large for this layout. Try a layout with fewer tiles.');
+    assert.equal(s.errors.at(-1), '“Window 0” has a minimum size too large for this layout. Try a layout with fewer tiles.');
 });
 
 /** Tiling Assistant's tile(): a rect equal to the work area maximizes instead of tiling. */
@@ -381,7 +399,7 @@ test('a maximized All window larger than the work area reports the All advice', 
         args[0].frame = {...area, width: area.width + 200};
     };
     assert.equal((await s.controller.arrange(FIT)).ok, false);
-    assert.equal(s.errors.at(-1), 'A window’s minimum size is too large for this layout. Pick fewer programs or a numbered layout.');
+    assert.equal(s.errors.at(-1), '“Window 0” has a minimum size too large for this layout. Pick fewer programs or a numbered layout.');
 });
 
 test('names fewer programs or a numbered layout when an All window minimum size overflows', async () => {
@@ -392,7 +410,7 @@ test('names fewer programs or a numbered layout when an All window minimum size 
         args[0].frame.width += 200;
     };
     assert.equal((await s.controller.arrange(FIT)).ok, false);
-    assert.equal(s.errors.at(-1), 'A window’s minimum size is too large for this layout. Pick fewer programs or a numbered layout.');
+    assert.equal(s.errors.at(-1), '“Window 0” has a minimum size too large for this layout. Pick fewer programs or a numbered layout.');
 });
 
 test('focuses the most recent arranged window when the focused one is filtered out; Undo and errors refocus the original', async () => {

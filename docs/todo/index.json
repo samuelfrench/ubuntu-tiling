@@ -140,6 +140,22 @@
     "test": null
   },
   {
+    "path": "docs/todo/product/minimum-size-window.md",
+    "slug": "minimum-size-window",
+    "title": "Identify the window with a minimum-size constraint",
+    "status": "now",
+    "area": "product",
+    "due": null,
+    "updated": "2026-10-28",
+    "owner": "agent",
+    "brief": "Include the offending window in minimum-size system alerts",
+    "refs": [
+      "extension/gridController.js",
+      "tests/gridController.test.mjs"
+    ],
+    "test": null
+  },
+  {
     "path": "docs/todo/product/native-unchanged-frame.md",
     "slug": "native-unchanged-frame",
     "title": "Investigate native restore with identical bounds if encountered",

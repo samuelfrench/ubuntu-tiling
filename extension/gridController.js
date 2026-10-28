@@ -86,7 +86,9 @@ export class GridController {
                 if (!this._placed(window, rect, context.workArea))
                     throw new Error('A window refused to tile. The previous layout was restored.');
                 if (!fitsCell(window.get_frame_rect(), rect)) {
-                    throw new Error(`A window’s minimum size is too large for this layout. ${
+                    const title = window.get_title()?.trim();
+                    const name = title ? `“${title}”` : 'An untitled window';
+                    throw new Error(`${name} has a minimum size too large for this layout. ${
                         plan.fit ? 'Pick fewer programs or a numbered layout.' : 'Try a layout with fewer tiles.'}`);
                 }
             }
