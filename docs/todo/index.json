@@ -143,12 +143,12 @@
     "path": "docs/todo/product/minimum-size-window.md",
     "slug": "minimum-size-window",
     "title": "Identify the window with a minimum-size constraint",
-    "status": "now",
+    "status": "waiting-sam",
     "area": "product",
     "due": null,
     "updated": "2026-10-28",
-    "owner": "agent",
-    "brief": "Include the offending window in minimum-size system alerts",
+    "owner": "sam",
+    "brief": "Installed and tested; verify the alert after Sam’s chosen logout/login",
     "refs": [
       "extension/gridController.js",
       "tests/gridController.test.mjs"

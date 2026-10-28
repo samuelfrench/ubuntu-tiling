@@ -6,10 +6,11 @@
 
 ## Now
 
-- [ ] Identify the window with a minimum-size constraint — Include the offending window in minimum-size system alerts · _product_ · [details](docs/todo/product/minimum-size-window.md)
+_None._
 
 ## Waiting on Sam
 
+- [ ] Identify the window with a minimum-size constraint — Installed and tested; verify the alert after Sam’s chosen logout/login · _product_ · [details](docs/todo/product/minimum-size-window.md)
 - [ ] Silence successful keyboard resize notifications — 9a20383 tested, pushed and installed; Sam chose to activate later by logout/login, then verify a quiet resize · _product_ · [details](docs/todo/product/quiet-keyboard-resize.md)
 
 ## Scheduled (by due date)
