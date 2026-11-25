@@ -17,6 +17,21 @@
     "test": null
   },
   {
+    "path": "docs/todo/ci/integration-harness-panel-offset.md",
+    "slug": "integration-harness-panel-offset",
+    "title": "Native integration harness fails with a 32 px panel offset",
+    "status": "known-failure",
+    "area": "ci",
+    "due": null,
+    "updated": "2026-11-25",
+    "owner": "agent",
+    "brief": "tests/integration/run.py exits 1 (58 checks) on GNOME 50.1 because the private shell has a 32 px top panel; stock mode fails identically",
+    "refs": [
+      "tests/integration/run.py"
+    ],
+    "test": "/usr/bin/python3 tests/integration/run.py"
+  },
+  {
     "path": "docs/todo/done/process/generated-todo-migration.md",
     "slug": "generated-todo-migration",
     "title": "Generate TODO from per-task files",
@@ -69,6 +84,22 @@
     "test": null
   },
   {
+    "path": "docs/todo/done/product/minimum-size-window.md",
+    "slug": "minimum-size-window",
+    "title": "Identify the window with a minimum-size constraint",
+    "status": "done",
+    "area": "product",
+    "due": null,
+    "updated": "2026-11-25",
+    "owner": "sam",
+    "brief": "Done 2026-11-25: Nov 24 shell restart loaded the installed alert code that names the window; reopen only if an unnamed alert appears",
+    "refs": [
+      "extension/gridController.js",
+      "tests/gridController.test.mjs"
+    ],
+    "test": null
+  },
+  {
     "path": "docs/todo/done/product/more-layouts-app-filters.md",
     "slug": "more-layouts-app-filters",
     "title": "More layouts and program-type filters",
@@ -84,6 +115,22 @@
       "extension/grids.js",
       "extension/windowGroups.js",
       "extension/gridControls.js"
+    ],
+    "test": null
+  },
+  {
+    "path": "docs/todo/done/product/quiet-keyboard-resize.md",
+    "slug": "quiet-keyboard-resize",
+    "title": "Silence successful keyboard resize notifications",
+    "status": "done",
+    "area": "product",
+    "due": null,
+    "updated": "2026-11-25",
+    "owner": "sam",
+    "brief": "Done 2026-11-25: Nov 24 shell restart loaded the installed code (byte-identical to source); reopen only if an Arranged toast appears",
+    "refs": [
+      "extension/gridControls.js",
+      "README.md"
     ],
     "test": null
   },
@@ -140,22 +187,6 @@
     "test": null
   },
   {
-    "path": "docs/todo/product/minimum-size-window.md",
-    "slug": "minimum-size-window",
-    "title": "Identify the window with a minimum-size constraint",
-    "status": "waiting-sam",
-    "area": "product",
-    "due": null,
-    "updated": "2026-10-28",
-    "owner": "sam",
-    "brief": "Installed and tested; verify the alert after Sam’s chosen logout/login",
-    "refs": [
-      "extension/gridController.js",
-      "tests/gridController.test.mjs"
-    ],
-    "test": null
-  },
-  {
     "path": "docs/todo/product/native-unchanged-frame.md",
     "slug": "native-unchanged-frame",
     "title": "Investigate native restore with identical bounds if encountered",
@@ -168,22 +199,6 @@
     "refs": [
       "extension/gridControls.js",
       "tests/integration/scenario.js"
-    ],
-    "test": null
-  },
-  {
-    "path": "docs/todo/product/quiet-keyboard-resize.md",
-    "slug": "quiet-keyboard-resize",
-    "title": "Silence successful keyboard resize notifications",
-    "status": "waiting-sam",
-    "area": "product",
-    "due": null,
-    "updated": "2026-10-26",
-    "owner": "sam",
-    "brief": "9a20383 tested, pushed and installed; Sam chose to activate later by logout/login, then verify a quiet resize",
-    "refs": [
-      "extension/gridControls.js",
-      "README.md"
     ],
     "test": null
   },
